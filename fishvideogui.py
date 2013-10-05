@@ -28,6 +28,7 @@ from PIL import ImageQt as iqt
 
 # #######################################
 
+#TODO whatever
 
 class Main(QtGui.QMainWindow):
     def __init__(self, parent=None):
