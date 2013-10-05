@@ -3,15 +3,13 @@ __author__ = 'henningerj'
 
 # #######################################
 '''
-Notes:
+Note:
 QMainWindow allows for funky thinks like menu- and tool-bars
 '''
 
 # #######################################
 
 # TODO video-canvas: resize with mainwindow
-# TODO Metadata: read-in and show metadata-entries for dictionary of dictionary and connect to source-dictonaries
-# TODO create structure for worker-threads: data-thread, control-thread
 
 # #######################################
 
@@ -44,7 +42,6 @@ class Main(QtGui.QMainWindow):
         # use input arguments
         self.prog_name = sys.argv[0]
 
-
         # some debugging stuff
         metadata_a = dict()
         metadata_b = dict()
@@ -57,23 +54,29 @@ class Main(QtGui.QMainWindow):
         metadata_b['B'] = 'more stuff'
         metadata_b['C'] = 'really a lot of stuff'
 
-        metadata = dict()
-        metadata['Metadata A'] = metadata_a
-        metadata['Metadata B'] = metadata_b
+        self.metadata = dict()
+        self.metadata['Metadata A'] = metadata_a
+        self.metadata['Metadata B'] = metadata_b
+
+        # DEBUG: canvas pixel size
+        self.canvas_v = 800
+        self.canvas_h = 600
+        img = image.fromarray(np.zeros((self.canvas_v, self.canvas_h))).convert('RGB')
 
         # #######################################
         # GEOMETRY
 
         width = 800
-        hight = 600
+        height = 600
         offset_left = 50
         offset_top = 50
 
         max_tab_width = 300
+        min_tab_width = 300
 
-        self.setGeometry(offset_left, offset_top, width, hight)
+        self.setGeometry(offset_left, offset_top, width, height)
         self.setSizePolicy(Qt.QSizePolicy.Maximum, Qt.QSizePolicy.Maximum)
-        self.setMinimumSize(width, hight)
+        self.setMinimumSize(width, height)
         self.setWindowTitle('Fish Video GUI')
 
         # #######################################
@@ -95,15 +98,27 @@ class Main(QtGui.QMainWindow):
         # POPULATE TOP LAYOUT
 
         self.video_canvas = QtGui.QLabel(self)
+        self.video_canvas.setSizePolicy(Qt.QSizePolicy.Expanding, Qt.QSizePolicy.Expanding)
+
+        policy = self.video_canvas.sizePolicy()
+        policy.setHeightForWidth(True)
+        self.video_canvas.setSizePolicy(policy)
+        print self.video_canvas.sizePolicy().hasHeightForWidth()
+
+        self.video_canvas.setScaledContents(True)
+        self.video_canvas.setAlignment(Qt.Qt.AlignVCenter | Qt.Qt.AlignHCenter)
+
         self.tab = QtGui.QTabWidget()
+        self.tab.setMinimumWidth(min_tab_width)
         self.tab.setMaximumWidth(max_tab_width)
 
         self.top_layout.addWidget(self.video_canvas)
         self.top_layout.addWidget(self.tab)
 
-        # populate tab
+        # #######################################
+        # POPULATE TAB
         self.pages = dict()
-        for metadata_listname in metadata.keys():
+        for metadata_listname in self.metadata.keys():
             self.pages[metadata_listname] = (QtGui.QWidget())
             self.tab.addTab(self.pages[metadata_listname], metadata_listname)
 
@@ -120,8 +135,9 @@ class Main(QtGui.QMainWindow):
 
             self.page_scroll.setWidgetResizable(False)
 
-            for entry_name in metadata[metadata_listname].keys():
-                entry = Metadata_Entry(metadata_listname, entry_name, metadata[metadata_listname][entry_name])
+            for entry_name in self.metadata[metadata_listname].keys():
+                entry = Metadata_Entry(metadata_listname, entry_name,
+                                       self.metadata[metadata_listname][entry_name], self)
                 self.page_scroll_layout.addWidget(entry)
 
             self.page_scroll.setWidget(self.page_scroll_contents)
@@ -129,15 +145,11 @@ class Main(QtGui.QMainWindow):
         # #######################################
         # CANVAS
 
-        # DEBUG: canvas pixel size
-        canvas_v = 800
-        canvas_h = 600
-        # DEBUG: canvas start image
-        img = image.fromarray(np.zeros((canvas_v, canvas_h))).convert('RGB')
-
-        self.video_canvas.setPixmap(QtGui.QPixmap.fromImage(iqt.ImageQt(img).scaled(400, 300)))
-        # self.video_canvas.setPixmap(QtGui.QPixmap.fromImage(iqt.ImageQt(img)))
-        self.video_canvas.setAlignment(Qt.Qt.AlignVCenter | Qt.Qt.AlignHCenter)
+        self.video_canvas.setPixmap(QtGui.QPixmap.fromImage(iqt.ImageQt(img).scaled(self.video_canvas.size(),
+                                                                                    Qt.Qt.KeepAspectRatio,
+                                                                                    Qt.Qt.FastTransformation)))
+        # self.video_canvas.setPixmap(QtGui.QPixmap.fromImage(iqt.ImageQt(img).scaled(400, 300)))
+        #self.video_canvas.setPixmap(QtGui.QPixmap.fromImage(iqt.ImageQt(img)))
 
         # #######################################
         # POPULATE BOTTOM LAYOUT
@@ -166,6 +178,27 @@ class Main(QtGui.QMainWindow):
         # #######################################
         # WORKER THREADS
 
+        # INITIATE COMPONENTS
+        self.controlcenter = ControlCenter()
+        self.datacollector = DataCollector()
+        self.storage = Storage()
+
+        # CREATE THREADS TO MANAGE THE COMPONENTS
+        self.threads = dict()
+        self.threads['control'] = QtCore.QThread(self)
+        self.threads['data'] = QtCore.QThread(self)
+        self.threads['storage'] = QtCore.QThread(self)
+
+        # MOVE COMPONENTS INTO THEIR THREADS
+        self.controlcenter.moveToThread(self.threads['control'])
+        self.datacollector.moveToThread(self.threads['data'])
+        self.storage.moveToThread(self.threads['storage'])
+
+        # HERE, WE START THREATS, NOT THE CLASSES INSIDE !!
+        self.threads['control'].start()
+        self.threads['data'].start()
+        self.threads['storage'].start()
+
         # #######################################
         # CONNECTIONS
 
@@ -177,19 +210,20 @@ class Main(QtGui.QMainWindow):
         self.connect(self.button_e, QtCore.SIGNAL('clicked()'), self.bt_e)
         self.connect(self.button_f, QtCore.SIGNAL('clicked()'), self.bt_f)
 
+        # treads
+
         # create keyboard shortcuts
         self.create_actions()
 
         # #######################################
+        # #######################################
 
-    '''
-    Note:
-    Buttons...
-     ... can be made inactive
-     ... have on/off states
-     ... can change text, color etc
-     depending on program state.
-    '''
+    #Note:
+    #Buttons...
+    # ... can be made inactive
+    # ... have on/off states
+    # ... can change text, color etc
+    # depending on program state.
 
     # GUI OBJECT CONNECTORS
     def bt_a(self):
@@ -210,8 +244,16 @@ class Main(QtGui.QMainWindow):
     def bt_f(self):
         pass
 
-    def update_video(self):
+    def update_video(self, frame):
+        # self.video_canvas.setPixmap(QtGui.QPixmap.fromImage(ImageQt.ImageQt(frame).scaledToWidth(self.canvas_size)))
+
         pass
+
+    def metadata_changed(self, package):
+        print 'metadata changed:', package['listname'], package['entryname'], package['entry']
+
+        # update metadata dictionaries
+        self.metadata[package['listname']][package['entryname']] = package['entry']
 
     # ACTIONS
     def create_actions(self):
@@ -242,6 +284,34 @@ class Metadata_Entry(QtGui.QWidget):
 
         self.layout.addWidget(self.label)
         self.layout.addWidget(self.lineedit)
+
+        self.connect(self.lineedit, QtCore.SIGNAL('editingFinished()'), self.data_changed)
+        self.connect(self, QtCore.SIGNAL('metadata_changed(PyQt_PyObject)'), parent.metadata_changed)
+
+    def data_changed(self):
+        package = dict()
+        package['listname'] = self.listname
+        package['entryname'] = self.entryname
+        package['entry'] = self.lineedit.text()
+        self.emit(QtCore.SIGNAL('metadata_changed(PyQt_PyObject)'), package)
+
+# #######################################
+# WORKER CLASSES
+
+
+class ControlCenter(QtCore.QObject):
+    def __init__(self, parent=None):
+        QtCore.QObject.__init__(self, parent)
+
+
+class DataCollector(QtCore.QObject):
+    def __init__(self, parent=None):
+        QtCore.QObject.__init__(self, parent)
+
+
+class Storage(QtCore.QObject):
+    def __init__(self, parent=None):
+        QtCore.QObject.__init__(self, parent)
 
 # #######################################
 
