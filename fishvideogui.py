@@ -197,8 +197,7 @@ class Main(QtGui.QMainWindow):
         # a simple timer to create some noise on the canvas
         self.schneeflocken = QtCore.QTimer()
         self.connect(self.schneeflocken, QtCore.SIGNAL('timeout()'), self.noise_video)
-        self.schneeflocken.start(1000.)
-        #self.schneeflocken.start(1000./25.)
+        self.schneeflocken.start(1000. / 25.)
 
         # #######################################
         # #######################################
