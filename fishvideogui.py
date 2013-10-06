@@ -9,7 +9,7 @@ QMainWindow allows for funky thinks like menu- and tool-bars
 
 # #######################################
 
-# TODO video-canvas: resize with mainwindow
+# TODO video-canvas: check resizing with mainwindow
 
 # #######################################
 
