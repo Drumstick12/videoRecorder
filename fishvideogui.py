@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-__author__ = 'henningerj'
+__author__ = ''
 
 # #######################################
 '''
@@ -9,7 +9,7 @@ QMainWindow allows for funky thinks like menu- and tool-bars
 
 # #######################################
 
-# TODO video-canvas: check resizing with mainwindow
+# TODO video-canvas: full screen does not work properly. why?
 
 # #######################################
 
@@ -27,6 +27,7 @@ from PIL import Image as image
 from PIL import ImageQt as iqt
 
 # #######################################
+# THE MAIN GUI WINDOW
 
 
 class Main(QtGui.QMainWindow):
@@ -36,13 +37,7 @@ class Main(QtGui.QMainWindow):
         # #######################################
         # ORGANIZATION
 
-        # the config
-        # self.cfg = dict()
-
-        # use input arguments
-        self.prog_name = sys.argv[0]
-
-        # some debugging stuff
+        # DEBUG: some random metadata input
         metadata_a = dict()
         metadata_b = dict()
 
@@ -58,13 +53,8 @@ class Main(QtGui.QMainWindow):
         self.metadata['Metadata A'] = metadata_a
         self.metadata['Metadata B'] = metadata_b
 
-        # DEBUG: canvas pixel size
-        self.canvas_v = 800
-        self.canvas_h = 600
-        img = image.fromarray(np.zeros((self.canvas_v, self.canvas_h))).convert('RGB')
-
         # #######################################
-        # GEOMETRY
+        # GEOMETRY of mainwindow at start-up
 
         width = 800
         height = 600
@@ -97,10 +87,7 @@ class Main(QtGui.QMainWindow):
         # #######################################
         # POPULATE TOP LAYOUT
 
-        self.video_canvas = QtGui.QLabel(self)
-        self.video_canvas.setAlignment(Qt.Qt.AlignVCenter | Qt.Qt.AlignHCenter)
-        self.video_canvas.setSizePolicy(Qt.QSizePolicy.Expanding, Qt.QSizePolicy.Expanding)
-        # self.video_canvas.setFrameStyle(Qt.QFrame.Panel | Qt.QFrame.Sunken)
+        self.video_canvas = VideoCanvas(parent=self)
 
         self.tab = QtGui.QTabWidget()
         self.tab.setMinimumWidth(min_tab_width)
@@ -110,7 +97,7 @@ class Main(QtGui.QMainWindow):
         self.top_layout.addWidget(self.tab)
 
         # #######################################
-        # POPULATE TAB
+        # TOP: POPULATE TAB WIDGET
         self.pages = dict()
         for metadata_listname in self.metadata.keys():
             self.pages[metadata_listname] = (QtGui.QWidget())
@@ -135,13 +122,6 @@ class Main(QtGui.QMainWindow):
                 self.page_scroll_layout.addWidget(entry)
 
             self.page_scroll.setWidget(self.page_scroll_contents)
-
-        # #######################################
-        # CANVAS
-        #self.video_canvas.setPixmap(QtGui.QPixmap.fromImage(iqt.ImageQt(img).scaled(self.video_canvas.size(),
-        #                                                                            Qt.Qt.KeepAspectRatio,
-        #                                                                            Qt.Qt.FastTransformation)))
-        self.video_canvas.setPixmap(QtGui.QPixmap.fromImage(iqt.ImageQt(img).scaled(400, 300)))
 
         # #######################################
         # POPULATE BOTTOM LAYOUT
@@ -169,8 +149,11 @@ class Main(QtGui.QMainWindow):
 
         # #######################################
         # WORKER THREADS
+        # For heavy duty work, which might block the GUI.
+        # Some typical applications are examplified.
+        # Often, these processes act on different time-scales.
 
-        # INITIATE COMPONENTS
+        # INITIATE WORKER COMPONENTS
         self.controlcenter = ControlCenter()
         self.datacollector = DataCollector()
         self.storage = Storage()
@@ -186,13 +169,15 @@ class Main(QtGui.QMainWindow):
         self.datacollector.moveToThread(self.threads['data'])
         self.storage.moveToThread(self.threads['storage'])
 
-        # HERE, WE START THREATS, NOT THE CLASSES INSIDE !!
+        # HERE, WE START THREATS, NOT THE INSTANCES INSIDE !!
         self.threads['control'].start()
         self.threads['data'].start()
         self.threads['storage'].start()
 
         # #######################################
         # CONNECTIONS
+        # These are necessary to connect GUI elements and instances in various threads.
+        # Signals and slots can easily be custom-crafted to meet the needs. Data can be sent easily, too.
 
         # connect buttons
         self.connect(self.button_a, QtCore.SIGNAL('clicked()'), self.bt_a)
@@ -202,10 +187,18 @@ class Main(QtGui.QMainWindow):
         self.connect(self.button_e, QtCore.SIGNAL('clicked()'), self.bt_e)
         self.connect(self.button_f, QtCore.SIGNAL('clicked()'), self.bt_f)
 
-        # treads
+        # tread connections
+        # ...
 
         # create keyboard shortcuts
         self.create_actions()
+
+        # DEBUG
+        # a simple timer to create some noise on the canvas
+        self.schneeflocken = QtCore.QTimer()
+        self.connect(self.schneeflocken, QtCore.SIGNAL('timeout()'), self.noise_video)
+        self.schneeflocken.start(1000.)
+        #self.schneeflocken.start(1000./25.)
 
         # #######################################
         # #######################################
@@ -216,8 +209,11 @@ class Main(QtGui.QMainWindow):
     # ... have on/off states
     # ... can change text, color etc
     # depending on program state.
+    # Threads..
+    # ... have to be connected with Signals/Slots to be independent, i.e. non-blocking.
 
     # GUI OBJECT CONNECTORS
+    # Fill-up!
     def bt_a(self):
         pass
 
@@ -236,18 +232,28 @@ class Main(QtGui.QMainWindow):
     def bt_f(self):
         pass
 
-    def update_video(self, img):
-        self.video_canvas.setPixmap(QtGui.QPixmap.fromImage(iqt.ImageQt(img).scaled(self.video_canvas.size(),
-                                                                                    Qt.Qt.KeepAspectRatio,
-                                                                                    Qt.Qt.FastTransformation)))
+    # call this to update the video-canvas
+    def update_video(self, img=None):
+        # if no image is given, this method creates random noise
+        if img is None:
+            img = image.fromarray(
+                np.random.random((self.video_canvas.canvas_h, self.video_canvas.canvas_w)) * 256).convert('RGB')
 
+        # update canvas
+        self.video_canvas.setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(img)))
+
+    # called by metadata-entries in tabs
+    # ADAPT to your needs
     def metadata_changed(self, package):
-        print 'metadata changed:', package['listname'], package['entryname'], package['entry']
-
         # update metadata dictionaries
         self.metadata[package['listname']][package['entryname']] = package['entry']
 
+        # instead of showing this here, you could update your running program or whatever
+        print 'metadata changed:', package['listname'], package['entryname'], package['entry']
+
     # ACTIONS
+    # Actions can be used to assign keyboard-shortcuts
+    # This method is called in the __init__ method to create keyboard shortcuts
     def create_actions(self):
         # EXAMPLE
         # Close Program
@@ -256,12 +262,18 @@ class Main(QtGui.QMainWindow):
         self.connect(self.action_cancel, QtCore.SIGNAL('triggered()'), qapp, QtCore.SLOT("quit()"))
         self.addAction(self.action_cancel)
 
-        # FUNCTIONS
+    # FUNCTIONS
+    # DEBUG: create some random noise on the canvas
+    def noise_video(self):
+        self.update_video()
 
 # #######################################
+# GUI HELPER CLASSES
 
 
 class Metadata_Entry(QtGui.QWidget):
+    """This class creates label-and-lineedit-combinations in the tabs and allwos for feedback communication."""
+
     def __init__(self, listname, entryname, entry, parent=None):
         QtGui.QWidget.__init__(self, parent)
 
@@ -287,21 +299,52 @@ class Metadata_Entry(QtGui.QWidget):
         package['entry'] = self.lineedit.text()
         self.emit(QtCore.SIGNAL('metadata_changed(PyQt_PyObject)'), package)
 
+
+class VideoCanvas(QtGui.QLabel):
+    """This class creates the video-canvas-widget in the mainwindow by subclassing the QLabel-Widget"""
+    # TODO fix fullscreen scaling of input-image
+    def __init__(self, parent=None):
+        QtGui.QLabel.__init__(self, parent)
+        self.setAlignment(Qt.Qt.AlignVCenter | Qt.Qt.AlignHCenter)
+        self.setSizePolicy(Qt.QSizePolicy.Expanding, Qt.QSizePolicy.Expanding)
+        self.setFrameStyle(Qt.QFrame.Panel | Qt.QFrame.Sunken)
+
+        self.canvas_w = 800
+        self.canvas_h = 600
+        img = image.fromarray(np.zeros((self.canvas_h, self.canvas_w))).convert('RGB')
+        self.setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(img)))
+
+    def resizeEvent(self, QResizeEvent):
+        """ override in-built Qt function """
+        self.resizeImage()
+
+    def setImage(self, pixmap):
+        self.setPixmap(pixmap.scaled(self.size(), Qt.Qt.KeepAspectRatio))
+
+    def resizeImage(self):
+        self.setPixmap(self.pixmap().scaled(self.size(), Qt.Qt.KeepAspectRatio))
+
 # #######################################
 # WORKER CLASSES
 
 
 class ControlCenter(QtCore.QObject):
+    """Put your experiment logic here."""
+
     def __init__(self, parent=None):
         QtCore.QObject.__init__(self, parent)
 
 
 class DataCollector(QtCore.QObject):
+    """Collect your data in this class."""
+
     def __init__(self, parent=None):
         QtCore.QObject.__init__(self, parent)
 
 
 class Storage(QtCore.QObject):
+    """use this class to store your data periodically."""
+
     def __init__(self, parent=None):
         QtCore.QObject.__init__(self, parent)
 
@@ -309,7 +352,7 @@ class Storage(QtCore.QObject):
 
 if __name__ == "__main__":
     # entering the gui app
-    qapp = QtGui.QApplication(sys.argv)
-    main = Main()
-    main.show()
-    exit(qapp.exec_())
+    qapp = QtGui.QApplication(sys.argv)  # create the main application
+    main = Main()  # create the mainwindow instance
+    main.show()  # show the mainwindow instance
+    exit(qapp.exec_())  # start the event-loop: no signals are sent or received without this.
