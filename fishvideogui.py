@@ -98,15 +98,9 @@ class Main(QtGui.QMainWindow):
         # POPULATE TOP LAYOUT
 
         self.video_canvas = QtGui.QLabel(self)
-        self.video_canvas.setSizePolicy(Qt.QSizePolicy.Expanding, Qt.QSizePolicy.Expanding)
-
-        policy = self.video_canvas.sizePolicy()
-        policy.setHeightForWidth(True)
-        self.video_canvas.setSizePolicy(policy)
-        print self.video_canvas.sizePolicy().hasHeightForWidth()
-
-        self.video_canvas.setScaledContents(True)
         self.video_canvas.setAlignment(Qt.Qt.AlignVCenter | Qt.Qt.AlignHCenter)
+        self.video_canvas.setSizePolicy(Qt.QSizePolicy.Expanding, Qt.QSizePolicy.Expanding)
+        # self.video_canvas.setFrameStyle(Qt.QFrame.Panel | Qt.QFrame.Sunken)
 
         self.tab = QtGui.QTabWidget()
         self.tab.setMinimumWidth(min_tab_width)
@@ -144,12 +138,10 @@ class Main(QtGui.QMainWindow):
 
         # #######################################
         # CANVAS
-
-        self.video_canvas.setPixmap(QtGui.QPixmap.fromImage(iqt.ImageQt(img).scaled(self.video_canvas.size(),
-                                                                                    Qt.Qt.KeepAspectRatio,
-                                                                                    Qt.Qt.FastTransformation)))
-        # self.video_canvas.setPixmap(QtGui.QPixmap.fromImage(iqt.ImageQt(img).scaled(400, 300)))
-        #self.video_canvas.setPixmap(QtGui.QPixmap.fromImage(iqt.ImageQt(img)))
+        #self.video_canvas.setPixmap(QtGui.QPixmap.fromImage(iqt.ImageQt(img).scaled(self.video_canvas.size(),
+        #                                                                            Qt.Qt.KeepAspectRatio,
+        #                                                                            Qt.Qt.FastTransformation)))
+        self.video_canvas.setPixmap(QtGui.QPixmap.fromImage(iqt.ImageQt(img).scaled(400, 300)))
 
         # #######################################
         # POPULATE BOTTOM LAYOUT
@@ -244,10 +236,10 @@ class Main(QtGui.QMainWindow):
     def bt_f(self):
         pass
 
-    def update_video(self, frame):
-        # self.video_canvas.setPixmap(QtGui.QPixmap.fromImage(ImageQt.ImageQt(frame).scaledToWidth(self.canvas_size)))
-
-        pass
+    def update_video(self, img):
+        self.video_canvas.setPixmap(QtGui.QPixmap.fromImage(iqt.ImageQt(img).scaled(self.video_canvas.size(),
+                                                                                    Qt.Qt.KeepAspectRatio,
+                                                                                    Qt.Qt.FastTransformation)))
 
     def metadata_changed(self, package):
         print 'metadata changed:', package['listname'], package['entryname'], package['entry']
