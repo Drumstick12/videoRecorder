@@ -261,6 +261,31 @@ class Main(QtGui.QMainWindow):
         self.connect(self.action_cancel, QtCore.SIGNAL('triggered()'), qapp, QtCore.SLOT("quit()"))
         self.addAction(self.action_cancel)
 
+        # Change Tabs
+        self.action_change_tab_left = QtGui.QAction("Go one tab to the right", self)
+        self.action_change_tab_left.setShortcut(Qt.Qt.CTRL + Qt.Qt.Key_PageDown)
+        self.connect(self.action_change_tab_left, QtCore.SIGNAL('triggered()'), self.next_tab)
+        self.addAction(self.action_change_tab_left)
+
+        self.action_change_tab_right = QtGui.QAction("Go one tab to the left", self)
+        self.action_change_tab_right.setShortcut(Qt.Qt.CTRL + Qt.Qt.Key_PageUp)
+        self.connect(self.action_change_tab_right, QtCore.SIGNAL('triggered()'), self.prev_tab)
+        self.addAction(self.action_change_tab_right)
+
+
+    def next_tab(self):
+        if self.tab.currentIndex() + 1 < self.tab.count():
+            self.tab.setCurrentIndex(self.tab.currentIndex() + 1)
+        else:
+            self.tab.setCurrentIndex(0)
+
+    def prev_tab(self):
+        if self.tab.currentIndex() > 0:
+            self.tab.setCurrentIndex(self.tab.currentIndex() - 1)
+        else:
+            self.tab.setCurrentIndex(self.tab.count() - 1)
+
+
     # FUNCTIONS
     # DEBUG: create some random noise on the canvas
     def noise_video(self):
