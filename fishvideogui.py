@@ -4,7 +4,12 @@ __author__ = ''
 # #######################################
 '''
 Note:
-QMainWindow allows for funky thinks like menu- and tool-bars
+QMainWindow allows for funky things like menu- and tool-bars
+
+Keyboard Shortcuts:
+Quit Program: ESC
+Next Metadata-Tab: CTRL+Page-Down
+Previous Metadata-Tab: CTRL+Page-UP
 '''
 
 # #######################################
