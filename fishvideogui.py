@@ -27,10 +27,13 @@ except Exception, details:
 
 # import os
 import sys
+sys.path.append('/usr/lib/python2.7/site-packages')
 import numpy as np
+import odml
 from PIL import Image as image
 from PIL import ImageQt as iqt
 
+from IPython import embed
 # #######################################
 # THE MAIN GUI WINDOW
 
@@ -102,31 +105,32 @@ class Main(QtGui.QMainWindow):
         self.top_layout.addWidget(self.tab)
 
         # #######################################
-        # TOP: POPULATE TAB WIDGET
-        self.pages = dict()
-        for metadata_listname in self.metadata.keys():
-            self.pages[metadata_listname] = (QtGui.QWidget())
-            self.tab.addTab(self.pages[metadata_listname], metadata_listname)
-
-            self.page_layout = QtGui.QHBoxLayout()
-            self.pages[metadata_listname].setLayout(self.page_layout)
-
-            self.page_scroll = Qt.QScrollArea()
-            self.page_layout.addWidget(self.page_scroll)
-
-            self.page_scroll_contents = QtGui.QWidget()
-
-            self.page_scroll_layout = QtGui.QVBoxLayout(self.page_scroll_contents)
-            self.page_scroll_contents.setLayout(self.page_scroll_layout)
-
-            self.page_scroll.setWidgetResizable(False)
-
-            for entry_name in self.metadata[metadata_listname].keys():
-                entry = Metadata_Entry(metadata_listname, entry_name,
-                                       self.metadata[metadata_listname][entry_name], self)
-                self.page_scroll_layout.addWidget(entry)
-
-            self.page_scroll.setWidget(self.page_scroll_contents)
+        # POPULATE TAB
+        self.populateMetadataTab('./templates/decision_template.xml')
+        #self.pages = dict()
+        #for metadata_listname in self.metadata.keys():
+        #    self.pages[metadata_listname] = (QtGui.QWidget())
+        #    self.tab.addTab(self.pages[metadata_listname], metadata_listname)
+        #
+        #    self.page_layout = QtGui.QHBoxLayout()
+        #    self.pages[metadata_listname].setLayout(self.page_layout)
+        #
+        #    self.page_scroll = Qt.QScrollArea()
+        #    self.page_layout.addWidget(self.page_scroll)
+        #
+        #    self.page_scroll_contents = QtGui.QWidget()
+        #
+        #    self.page_scroll_layout = QtGui.QVBoxLayout(self.page_scroll_contents)
+        #    self.page_scroll_contents.setLayout(self.page_scroll_layout)
+        #
+        #    self.page_scroll.setWidgetResizable(False)
+        #
+        #    for entry_name in self.metadata[metadata_listname].keys():
+        #        entry = Metadata_Entry(metadata_listname, entry_name,
+        #                               self.metadata[metadata_listname][entry_name], self)
+        #        self.page_scroll_layout.addWidget(entry)
+        #
+        #    self.page_scroll.setWidget(self.page_scroll_contents)
 
         # #######################################
         # POPULATE BOTTOM LAYOUT
@@ -206,6 +210,63 @@ class Main(QtGui.QMainWindow):
 
         # #######################################
         # #######################################
+
+    def populateMetadataTab(self, template):
+        try:
+            embed()
+            temp = odml.tools.xmlparser.load(template)
+        except:
+            print ('failed to load metadata template! {0}'.format(template))
+            return
+
+        self.pages = dict()
+        for s in temp.sections:
+            self.create_tab(s)
+
+        #for metadata_listname in self.metadata.keys():
+        #    self.pages[metadata_listname] = (QtGui.QWidget())
+        #    self.tab.addTab(self.pages[metadata_listname], metadata_listname)
+        #
+        #    self.page_layout = QtGui.QHBoxLayout()
+        #    self.pages[metadata_listname].setLayout(self.page_layout)
+        #
+        #    self.page_scroll = Qt.QScrollArea()
+        #    self.page_layout.addWidget(self.page_scroll)
+        #
+        #    self.page_scroll_contents = QtGui.QWidget()
+        #
+        #    self.page_scroll_layout = QtGui.QVBoxLayout(self.page_scroll_contents)
+        #    self.page_scroll_contents.setLayout(self.page_scroll_layout)
+        #
+        #    self.page_scroll.setWidgetResizable(False)
+        #
+        #    for entry_name in self.metadata[metadata_listname].keys():
+        #        entry = Metadata_Entry(metadata_listname, entry_name,
+        #                               self.metadata[metadata_listname][entry_name], self)
+        #        self.page_scroll_layout.addWidget(entry)
+        #
+        #    self.page_scroll.setWidget(self.page_scroll_contents)
+
+    def create_tab(self, section):
+        self.pages[section.type] = (QtGui.QWidget())
+        self.tab.addTab(self.pages[section.type], section.type)
+        self.page_layout = QtGui.QHBoxLayout()
+        self.pages[section.type].setLayout(self.page_layout)
+
+        self.page_scroll = Qt.QScrollArea()
+        self.page_layout.addWidget(self.page_scroll)
+        self.page_scroll_contents = QtGui.QWidget()
+        self.page_scroll_layout = QtGui.QVBoxLayout(self.page_scroll_contents)
+        self.page_scroll_contents.setLayout(self.page_scroll_layout)
+        self.page_scroll.setWidgetResizable(False)
+
+        self.populate_tab(section)
+        self.page_scroll.setWidget(self.page_scroll_contents)
+
+    def populate_tab(self, section):
+        for p in section.properties:
+            entry = Metadata_Entry(section.type, p.name, p.value.value, self)
+            self.page_scroll_layout.addWidget(entry)
 
     #Note:
     #Buttons...
