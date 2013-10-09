@@ -112,30 +112,6 @@ class Main(QtGui.QMainWindow):
         # #######################################
         # POPULATE TAB
         self.populateMetadataTab('./templates/decision_template.xml')
-        #self.pages = dict()
-        #for metadata_listname in self.metadata.keys():
-        #    self.pages[metadata_listname] = (QtGui.QWidget())
-        #    self.tab.addTab(self.pages[metadata_listname], metadata_listname)
-        #
-        #    self.page_layout = QtGui.QHBoxLayout()
-        #    self.pages[metadata_listname].setLayout(self.page_layout)
-        #
-        #    self.page_scroll = Qt.QScrollArea()
-        #    self.page_layout.addWidget(self.page_scroll)
-        #
-        #    self.page_scroll_contents = QtGui.QWidget()
-        #
-        #    self.page_scroll_layout = QtGui.QVBoxLayout(self.page_scroll_contents)
-        #    self.page_scroll_contents.setLayout(self.page_scroll_layout)
-        #
-        #    self.page_scroll.setWidgetResizable(False)
-        #
-        #    for entry_name in self.metadata[metadata_listname].keys():
-        #        entry = Metadata_Entry(metadata_listname, entry_name,
-        #                               self.metadata[metadata_listname][entry_name], self)
-        #        self.page_scroll_layout.addWidget(entry)
-        #
-        #    self.page_scroll.setWidget(self.page_scroll_contents)
 
         # #######################################
         # POPULATE BOTTOM LAYOUT
@@ -160,6 +136,9 @@ class Main(QtGui.QMainWindow):
         self.bottom_layout.addWidget(self.button_d)
         self.bottom_layout.addWidget(self.button_e)
         self.bottom_layout.addWidget(self.button_f)
+
+        # #######################################
+        self.create_menu_bar()
 
         # #######################################
         # WORKER THREADS
@@ -213,12 +192,43 @@ class Main(QtGui.QMainWindow):
         self.connect(self.schneeflocken, QtCore.SIGNAL('timeout()'), self.noise_video)
         self.schneeflocken.start(1000. / 25.)
 
+    def create_menu_bar(self):
+        exit_action = QtGui.QAction(QtGui.QIcon('exit.png'), '&Exit', self)
+        exit_action.setShortcut('Ctrl+Q')
+        exit_action.setToolTip('Exit application')
+        exit_action.triggered.connect(QtGui.qApp.quit)
+
+        template_select_action = QtGui.QAction('&Select template', self)
+        template_select_action.setToolTip('Select metadata template')
+        template_select_action.triggered.connect(self.selectTemplate)
+
+        about_action = QtGui.QAction('&About', self)
+        about_action.setToolTip('About videoRecorder')
+        about_action.triggered.connect(self.showAbout)
+
+        menu_bar = self.menuBar()
+        file_menu = menu_bar.addMenu('&File')
+        file_menu.addAction(exit_action)
+        config_menu = menu_bar.addMenu('&Configuration')
+        config_menu.addAction(template_select_action)
+        help_menu = menu_bar.addMenu('&Help')
+        help_menu.addAction(about_action)
+
         # #######################################
         # #######################################
 
+    def selectTemplate(self):
+        print 'select template!'
+        # TODO implement this mehtod as file select dialog....
+        pass
+
+    def showAbout(self):
+        #TODO implement this method which shows a new window
+        print 'show about dialog'
+        pass
+
     def populateMetadataTab(self, template):
         try:
-            embed()
             temp = odml.tools.xmlparser.load(template)
         except:
             print ('failed to load metadata template! {0}'.format(template))
@@ -228,31 +238,11 @@ class Main(QtGui.QMainWindow):
         for s in temp.sections:
             self.create_tab(s)
 
-        #for metadata_listname in self.metadata.keys():
-        #    self.pages[metadata_listname] = (QtGui.QWidget())
-        #    self.tab.addTab(self.pages[metadata_listname], metadata_listname)
-        #
-        #    self.page_layout = QtGui.QHBoxLayout()
-        #    self.pages[metadata_listname].setLayout(self.page_layout)
-        #
-        #    self.page_scroll = Qt.QScrollArea()
-        #    self.page_layout.addWidget(self.page_scroll)
-        #
-        #    self.page_scroll_contents = QtGui.QWidget()
-        #
-        #    self.page_scroll_layout = QtGui.QVBoxLayout(self.page_scroll_contents)
-        #    self.page_scroll_contents.setLayout(self.page_scroll_layout)
-        #
-        #    self.page_scroll.setWidgetResizable(False)
-        #
-        #    for entry_name in self.metadata[metadata_listname].keys():
-        #        entry = Metadata_Entry(metadata_listname, entry_name,
-        #                               self.metadata[metadata_listname][entry_name], self)
-        #        self.page_scroll_layout.addWidget(entry)
-        #
-        #    self.page_scroll.setWidget(self.page_scroll_contents)
-
     def create_tab(self, section):
+        """
+
+        @param section:
+        """
         self.pages[section.type] = (QtGui.QWidget())
         self.tab.addTab(self.pages[section.type], section.type)
         self.page_layout = QtGui.QHBoxLayout()
