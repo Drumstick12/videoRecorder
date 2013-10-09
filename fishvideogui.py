@@ -28,8 +28,13 @@ except Exception, details:
 # import os
 import sys
 sys.path.append('/usr/lib/python2.7/site-packages')
+try:
+    import odml
+except:
+    print 'Cannot import odml library for metadata support! Check https://github.com/G-Node/python-odml'
+    quit()
+
 import numpy as np
-import odml
 from PIL import Image as image
 from PIL import ImageQt as iqt
 
