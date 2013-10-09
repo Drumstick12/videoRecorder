@@ -2,8 +2,7 @@
 <?xml-stylesheet type="text/xsl" href="odmlTerms.xsl" xmlns:odml="http://www.g-n
 ode.org/odml"?>
 <odML version="1">
-  <repository>http://portal.g-node.org/odml/terminologies/v1.0/terminologi
-  es.xml</repository>
+  <repository>http://portal.g-node.org/odml/terminologies/v1.0/terminologies.xml</repository>
   <version>1.0</version>
   <date>2013-10-06</date>
   <!-- ********************************************************* -->
