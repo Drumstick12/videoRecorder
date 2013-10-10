@@ -185,17 +185,19 @@ class Main(QtGui.QMainWindow):
 
 
     def create_menu_bar(self):
+        self.statusBar()
+
         exit_action = QtGui.QAction(QtGui.QIcon('exit.png'), '&Exit', self)
         exit_action.setShortcut('Ctrl+Q')
-        exit_action.setToolTip('Exit application')
+        exit_action.setStatusTip('Exit application')
         exit_action.triggered.connect(QtGui.qApp.quit)
 
         template_select_action = QtGui.QAction('&Select template', self)
-        template_select_action.setToolTip('Select metadata template')
+        template_select_action.setStatusTip('Select metadata template')
         template_select_action.triggered.connect(self.selectTemplate)
 
         about_action = QtGui.QAction('&About', self)
-        about_action.setToolTip('About videoRecorder')
+        about_action.setStatusTip('About videoRecorder')
         about_action.triggered.connect(self.showAbout)
 
         menu_bar = self.menuBar()
