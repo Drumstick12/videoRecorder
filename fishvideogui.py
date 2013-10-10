@@ -111,17 +111,18 @@ class Main(QtGui.QMainWindow):
         # POPULATE BOTTOM LAYOUT
         self.button_record = QtGui.QPushButton('Start Recording')
         self.button_stop = QtGui.QPushButton('Stop')
-        self.button_save = QtGui.QPushButton('Save')
+        self.button_cancel = QtGui.QPushButton('Cancel')
 
         self.button_stop.setDisabled(True)
+        self.button_cancel.setDisabled(True)
 
         self.button_record.setMinimumHeight(50)
         self.button_stop.setMinimumHeight(50)
-        self.button_save.setMinimumHeight(50)
+        self.button_cancel.setMinimumHeight(50)
 
         self.bottom_layout.addWidget(self.button_record)
         self.bottom_layout.addWidget(self.button_stop)
-        self.bottom_layout.addWidget(self.button_save)
+        self.bottom_layout.addWidget(self.button_cancel)
 
         # #######################################
         self.create_menu_bar()
@@ -159,7 +160,7 @@ class Main(QtGui.QMainWindow):
         # Signals and slots can easily be custom-crafted to meet the needs. Data can be sent easily, too.
 
         # connect buttons
-        self.connect(self.button_save, QtCore.SIGNAL('clicked()'), self.clicked_save)
+        self.connect(self.button_cancel, QtCore.SIGNAL('clicked()'), self.clicked_cancel)
         self.connect(self.button_record, QtCore.SIGNAL('clicked()'), self.clicked_record)
         self.connect(self.button_stop, QtCore.SIGNAL('clicked()'), self.clicked_stop)
 
@@ -259,15 +260,17 @@ class Main(QtGui.QMainWindow):
                                  for i,cam in enumerate(self.cameras)}
 
     def check_data_dir(self):
-        today = date.today()  # get today's date as a datetime type
+        today = date.today()
         today_str = today.isoformat()
+        self.data_dir = today_str
         try:
             os.mkdir(today_str)
+            self.trial_counter = 0
         except:
             tmp = os.listdir(today_str)
             if len(tmp) > 0:
                 self.trial_counter = np.amax([int(e.split('_')[1]) for e in [ee.split('.')[0] for ee in tmp]])+1
-        self.data_dir = today_str
+
 
     def stop_all_recordings(self):
         for v in self.video_recordings.values():
@@ -289,15 +292,17 @@ class Main(QtGui.QMainWindow):
     def clicked_record(self):
         self.create_and_start_new_videorecordings()
         self.button_record.setDisabled(True)
+        self.button_cancel.setEnabled(True)
         self.button_stop.setDisabled(False)
 
-    def clicked_save(self):
-        #TODO get data,
-        #TODO get metadata form each tab
-        # TODO get camera metadata
-        #create a Dataset section
-        #create odml Document
-        pass
+    def clicked_cancel(self):
+        self.clicked_stop()
+        trial_name = 'trial_{0}'.format(self.trial_counter-1)
+        file_list = [ f for f in os.listdir(self.data_dir) if f.startswith(trial_name) ]
+        for f in file_list:
+            os.remove('{0}/{1}'.format(self.data_dir,f))
+        self.check_data_dir()
+        self.button_cancel.setEnabled(False)
 
     def clicked_stop(self):
         self.stop_all_recordings()
@@ -307,7 +312,13 @@ class Main(QtGui.QMainWindow):
         self.trial_counter += 1
 
     def save_metadata(self):
+        #TODO get data,
+        #TODO get metadata form each tab
+        #TODO get camera metadata
+        #TODO create a Dataset section
+        #TODO create odml Document
         trial_name = '{0}/trial_{1}'.format(self.data_dir, self.trial_counter)
+
         pass
 
     def update_video(self):
