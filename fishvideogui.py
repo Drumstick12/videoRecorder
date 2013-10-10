@@ -106,7 +106,7 @@ class Main(QtGui.QMainWindow):
 
         # #######################################
         # POPULATE TAB
-        self.populateMetadataTab('./templates/decision_template.xml')
+        self.populate_metadata_tab('./templates/decision_template.xml')
         self.populate_video_tabs()
         # #######################################
         # POPULATE BOTTOM LAYOUT
@@ -187,11 +187,11 @@ class Main(QtGui.QMainWindow):
 
         template_select_action = QtGui.QAction('&Select template', self)
         template_select_action.setStatusTip('Select metadata template')
-        template_select_action.triggered.connect(self.selectTemplate)
+        template_select_action.triggered.connect(self.select_template)
 
         about_action = QtGui.QAction('&About', self)
         about_action.setStatusTip('About videoRecorder')
-        about_action.triggered.connect(self.showAbout)
+        about_action.triggered.connect(self.show_about)
 
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu('&File')
@@ -204,17 +204,17 @@ class Main(QtGui.QMainWindow):
         # #######################################
         # #######################################
 
-    def selectTemplate(self):
+    def select_template(self):
         print 'select template!'
         # TODO implement this mehtod as file select dialog....
         pass
 
-    def showAbout(self):
+    def show_about(self):
         #TODO implement this method which shows a new window
         print 'show about dialog'
         pass
 
-    def populateMetadataTab(self, template):
+    def populate_metadata_tab(self, template):
         try:
             temp = odml.tools.xmlparser.load(template)
         except:
@@ -268,6 +268,7 @@ class Main(QtGui.QMainWindow):
     def clicked_save(self):
         #TODO get data,
         #TODO get metadata form each tab
+        # TODO get camera metadata
         #create a Dataset section
         #create odml Document
         pass
