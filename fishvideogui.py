@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 import sys
+from VideoRecording import VideoRecording
+
 sys.path.append('../')
 
 from MetadataEntry import MetadataEntry
@@ -8,7 +10,7 @@ from MetadataTab import MetadataTab
 import numpy as np
 from PIL import Image as image
 from PIL import ImageQt as iqt
-from Camera import Camera
+from Camera import Camera, brg2rgb
 __author__ = 'Joerg Henninger, Jan Grewe, Fabian Sinz'
 
 # #######################################
@@ -61,7 +63,7 @@ class Main(QtGui.QMainWindow):
         width, height = 800, 600
         offset_left, offset_top = 100, 100
         max_tab_width, min_tab_width = 640, 480
-
+        self.fps = 25
 
         self.setGeometry(offset_left, offset_top, width, height)
         self.setSizePolicy(Qt.QSizePolicy.Maximum, Qt.QSizePolicy.Maximum)
@@ -90,6 +92,8 @@ class Main(QtGui.QMainWindow):
         self.videos = QtGui.QTabWidget()
         self.videos.setMinimumWidth(min_tab_width)
         self.videos.setMaximumWidth(max_tab_width)
+        self.video_recordings = None
+        self.video_tabs = {}
 
         self.metadata = QtGui.QTabWidget()
         self.metadata.setMinimumWidth(min_tab_width)
@@ -103,30 +107,22 @@ class Main(QtGui.QMainWindow):
         # #######################################
         # POPULATE TAB
         self.populateMetadataTab('./templates/decision_template.xml')
-        self.populateVideoTab()
+        self.populate_video_tabs()
         # #######################################
         # POPULATE BOTTOM LAYOUT
+        self.button_record = QtGui.QPushButton('Start Recording')
+        self.button_stop = QtGui.QPushButton('Stop')
+        self.button_save = QtGui.QPushButton('Save')
 
-        self.button_a = QtGui.QPushButton('Start Recording')
-        self.button_b = QtGui.QPushButton('Stop')
-        self.button_c = QtGui.QPushButton('Play')
-        self.save_btn = QtGui.QPushButton('Save')
-        self.button_e = QtGui.QPushButton('Discard')
-        self.button_f = QtGui.QPushButton('Comment')
+        self.button_stop.setDisabled(True)
 
-        self.button_a.setMinimumHeight(50)
-        self.button_b.setMinimumHeight(50)
-        self.button_c.setMinimumHeight(50)
-        self.save_btn.setMinimumHeight(50)
-        self.button_e.setMinimumHeight(50)
-        self.button_f.setMinimumHeight(50)
+        self.button_record.setMinimumHeight(50)
+        self.button_stop.setMinimumHeight(50)
+        self.button_save.setMinimumHeight(50)
 
-        self.bottom_layout.addWidget(self.button_a)
-        self.bottom_layout.addWidget(self.button_b)
-        self.bottom_layout.addWidget(self.button_c)
-        self.bottom_layout.addWidget(self.save_btn)
-        self.bottom_layout.addWidget(self.button_e)
-        self.bottom_layout.addWidget(self.button_f)
+        self.bottom_layout.addWidget(self.button_record)
+        self.bottom_layout.addWidget(self.button_stop)
+        self.bottom_layout.addWidget(self.button_save)
 
         # #######################################
         self.create_menu_bar()
@@ -164,12 +160,9 @@ class Main(QtGui.QMainWindow):
         # Signals and slots can easily be custom-crafted to meet the needs. Data can be sent easily, too.
 
         # connect buttons
-        self.connect(self.button_a, QtCore.SIGNAL('clicked()'), self.bt_a)
-        self.connect(self.button_b, QtCore.SIGNAL('clicked()'), self.bt_b)
-        self.connect(self.button_c, QtCore.SIGNAL('clicked()'), self.bt_c)
-        self.connect(self.save_btn, QtCore.SIGNAL('clicked()'), self.save_data)
-        self.connect(self.button_e, QtCore.SIGNAL('clicked()'), self.bt_e)
-        self.connect(self.button_f, QtCore.SIGNAL('clicked()'), self.bt_f)
+        self.connect(self.button_save, QtCore.SIGNAL('clicked()'), self.clicked_save)
+        self.connect(self.button_record, QtCore.SIGNAL('clicked()'), self.clicked_record)
+        self.connect(self.button_stop, QtCore.SIGNAL('clicked()'), self.clicked_stop)
 
         # tread connections
         # ...
@@ -181,7 +174,7 @@ class Main(QtGui.QMainWindow):
         # a simple timer to create some noise on the canvas
         self.timer = QtCore.QTimer()
         self.connect(self.timer, QtCore.SIGNAL('timeout()'), self.update_video)
-        self.timer.start(1000./50.)
+        self.timer.start(1000./self.fps)
 
 
     def create_menu_bar(self):
@@ -233,20 +226,27 @@ class Main(QtGui.QMainWindow):
             self.metadata_tabs[s.type] = MetadataTab(s,self.metadata)
             #self.create_tab(s)
 
-    def populateVideoTab(self):
-        tab = VideoCanvas(parent=self)#(QtGui.QWidget())
-        self.videos.addTab(tab, "Video 1")
-        tab_layout = QtGui.QHBoxLayout()
-        tab.setLayout(tab_layout)
+    def populate_video_tabs(self):
+        self.cameras = [cam for cam in [Camera(i) for i in xrange(20)] if cam.is_working()]
 
+        if len(self.cameras) > 0:
+            for cam in self.cameras:
+                self.video_tabs[cam] = VideoCanvas(parent=self)
+                self.videos.addTab(self.video_tabs[cam], str(cam))
+                self.video_tabs[cam].setLayout(QtGui.QHBoxLayout())
+        else:
+            self.videos.addTab(QtGui.QWidget(),"No camera found")
 
-        # camera @fabee: detect cameras and create tabs
-        self.cameras = [Camera()]
-        for c in self.cameras:
-            c.open()
+    def create_and_start_new_videorecordings(self):
+        # @jan: could choose potentially from PIM1, MJPG, MP42, DIV3, DIVX, U263, I263, FLV1
+        # CV_FOURCC('P','I','M','1')    = MPEG-1 codec
+        self.video_recordings = {cam:VideoRecording('trial0_cam%i.avi' % (i), cam.get_resolution(), self.fps, 'FLV1')
+                                 for i,cam in enumerate(self.cameras)}
 
-
-
+    def stop_all_recordings(self):
+        for v in self.video_recordings.values():
+            v.stop()
+        self.video_recordings = None
 
 
     #Note:
@@ -260,42 +260,31 @@ class Main(QtGui.QMainWindow):
 
     # GUI OBJECT CONNECTORS
     # Fill-up!
-    def bt_a(self):
-        pass
+    def clicked_record(self):
+        self.create_and_start_new_videorecordings()
+        self.button_record.setDisabled(True)
+        self.button_stop.setDisabled(False)
 
-    def bt_b(self):
-        pass
-
-    def bt_c(self):
-        pass
-
-    def save_data(self):
+    def clicked_save(self):
         #TODO get data,
         #TODO get metadata form each tab
         #create a Dataset section
         #create odml Document
-
-
         pass
 
-    def bt_e(self):
-        pass
+    def clicked_stop(self):
+        self.stop_all_recordings()
+        self.button_record.setDisabled(False)
+        self.button_stop.setDisabled(True)
 
-    def bt_f(self):
-        pass
 
-    # call this to update the video-canvas
-    def update_video(self, img=None):
-        # if no image is given, this method creates random noise
-        if img is None:
-            img = image.fromarray(
-                np.random.random((self.video_canvas.canvas_h, self.video_canvas.canvas_w)) * 256).convert('RGB')
-
-        # update canvas
-
-        #self.video_canvas.setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(img)))
-        frame = image.fromarray(self.cameras[0].grab_frame())
-        self.video_canvas.setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(frame)))
+    def update_video(self):
+        for i,cam in enumerate(self.cameras):
+            frame = cam.grab_frame()
+            if self.video_recordings is not None:
+                self.video_recordings[cam].write(frame)
+            if i == self.videos.currentIndex():
+                self.video_tabs[cam].setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(image.fromarray(brg2rgb(frame)))))
 
     # called by metadata-entries in tabs
     # ADAPT to your needs

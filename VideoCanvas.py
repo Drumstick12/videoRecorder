@@ -8,6 +8,8 @@ except Exception, details:
     print 'Unfortunately, your system misses the PyQt4 packages.'
     quit()
 
+
+
 class VideoCanvas(QtGui.QLabel):
     """This class creates the video-canvas-widget in the mainwindow by subclassing the QLabel-Widget"""
     # TODO fix fullscreen scaling of input-image
@@ -22,7 +24,6 @@ class VideoCanvas(QtGui.QLabel):
 
         img = image.fromarray(np.zeros((self.canvas_h, self.canvas_w))).convert('RGB')
         self.setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(img)))
-
 
     def resizeEvent(self, QResizeEvent):
         """ override in-built Qt function """
