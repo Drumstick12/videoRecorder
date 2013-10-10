@@ -59,7 +59,7 @@ class Main(QtGui.QMainWindow):
 
         width, height = 800, 600
         offset_left, offset_top = 100, 100
-        max_tab_width, min_tab_width = 500, 500
+        max_tab_width, min_tab_width = 640, 480
 
 
         self.setGeometry(offset_left, offset_top, width, height)
@@ -85,25 +85,26 @@ class Main(QtGui.QMainWindow):
         # #######################################
         # POPULATE TOP LAYOUT
 
-        self.video_canvas = VideoCanvas(parent=self)
+
+        self.videos = QtGui.QTabWidget()
+        self.videos.setMinimumWidth(min_tab_width)
+        self.videos.setMaximumWidth(max_tab_width)
+
+
 
         self.tab = QtGui.QTabWidget()
         self.tab.setMinimumWidth(min_tab_width)
         self.tab.setMaximumWidth(max_tab_width)
 
-        self.top_layout.addWidget(self.video_canvas)
+        self.top_layout.addWidget(self.videos)
         self.top_layout.addWidget(self.tab)
 
-        # camera @fabee: detect cameras and create tabs
-        self.cameras = [Camera()]
-        for c in self.cameras:
-            c.open()
 
 
         # #######################################
         # POPULATE TAB
         self.populateMetadataTab('./templates/decision_template.xml')
-
+        self.populateVideoTab()
         # #######################################
         # POPULATE BOTTOM LAYOUT
 
@@ -231,6 +232,21 @@ class Main(QtGui.QMainWindow):
         self.pages = dict()
         for s in temp.sections:
             self.create_tab(s)
+
+    def populateVideoTab(self):
+        tab = (QtGui.QWidget())
+        self.videos.addTab(tab, "Video 1")
+        tab_layout = QtGui.QHBoxLayout()
+        tab.setLayout(tab_layout)
+        
+
+        self.video_canvas = VideoCanvas(parent=tab)
+
+         # camera @fabee: detect cameras and create tabs
+        self.cameras = [Camera()]
+        for c in self.cameras:
+            c.open()
+
 
     def create_tab(self, section):
         """
