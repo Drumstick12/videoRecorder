@@ -1,7 +1,8 @@
 #! /usr/bin/env python
 import sys
+import os
 from VideoRecording import VideoRecording
-
+from default_config import default_template
 sys.path.append('../')
 
 from MetadataEntry import MetadataEntry
@@ -57,9 +58,9 @@ class Main(QtGui.QMainWindow):
     def __init__(self, parent=None):
         QtGui.QMainWindow.__init__(self, parent)
         self.metadata_tabs = dict()
+
         # #######################################
         # GEOMETRY of mainwindow at start-up
-
         width, height = 800, 600
         offset_left, offset_top = 100, 100
         max_tab_width, min_tab_width = 640, 480
@@ -72,7 +73,6 @@ class Main(QtGui.QMainWindow):
 
         # #######################################
         # LAYOUTS
-
         self.main = QtGui.QWidget()
         self.setCentralWidget(self.main)
 
@@ -87,8 +87,6 @@ class Main(QtGui.QMainWindow):
 
         # #######################################
         # POPULATE TOP LAYOUT
-
-
         self.videos = QtGui.QTabWidget()
         self.videos.setMinimumWidth(min_tab_width)
         self.videos.setMaximumWidth(max_tab_width)
@@ -102,12 +100,11 @@ class Main(QtGui.QMainWindow):
         self.top_layout.addWidget(self.videos)
         self.top_layout.addWidget(self.metadata)
 
-
-
         # #######################################
         # POPULATE TAB
-        self.populate_metadata_tab('./templates/decision_template.xml')
+        self.populate_metadata_tab(default_template)
         self.populate_video_tabs()
+
         # #######################################
         # POPULATE BOTTOM LAYOUT
         self.button_record = QtGui.QPushButton('Start Recording')
@@ -193,11 +190,16 @@ class Main(QtGui.QMainWindow):
         about_action.setStatusTip('About videoRecorder')
         about_action.triggered.connect(self.show_about)
 
+        cam_config_action = QtGui.QAction('&Camera config', self)
+        cam_config_action.setStatusTip('Set camera aliases')
+        cam_config_action.triggered.connect(self.cam_aliases)
+
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu('&File')
         file_menu.addAction(exit_action)
         config_menu = menu_bar.addMenu('&Configuration')
         config_menu.addAction(template_select_action)
+        config_menu.addAction(cam_config_action)
         help_menu = menu_bar.addMenu('&Help')
         help_menu.addAction(about_action)
 
@@ -205,8 +207,16 @@ class Main(QtGui.QMainWindow):
         # #######################################
 
     def select_template(self):
-        print 'select template!'
-        # TODO implement this mehtod as file select dialog....
+        path = '%s/templates' %os.path.abspath('.')
+        if not os.path.isdir(path):
+            path = os.path.abspath('.')
+
+        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open template',path,"XML files (*.xml *.odml)")
+        if fname:
+            self.populate_metadata_tab(fname)
+
+    def cam_aliases(self):
+
         pass
 
     def show_about(self):
@@ -222,9 +232,9 @@ class Main(QtGui.QMainWindow):
             return
 
         self.metadata_tabs.clear()
+        self.metadata.clear()
         for s in temp.sections:
             self.metadata_tabs[s.type] = MetadataTab(s,self.metadata)
-            #self.create_tab(s)
 
     def populate_video_tabs(self):
         self.cameras = [cam for cam in [Camera(i) for i in xrange(20)] if cam.is_working()]

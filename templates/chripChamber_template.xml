@@ -24,7 +24,7 @@ ode.org/odml"?>
     
     <property>
       <name>Experimenter</name>
-      <value>
+      <value>Juan Sehuanes
 	<type>person</type>
       </value>
       <definition>The name of the person actually performing the
@@ -61,14 +61,14 @@ ode.org/odml"?>
     <property>
       <name>Task</name>
       <value>
-	Discrimination task
+	Chirping
         <type>string</type> 
       </value>
     </property>
     
     <property>
       <name>Protocol</name>
-      <value>Two-alternative-forced-choice
+      <value>Free swimming fish
       <type>text</type> 
       </value>
       <definition>A description of the task protocol undertaken by the
