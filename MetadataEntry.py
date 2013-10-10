@@ -5,30 +5,28 @@ except Exception, details:
     print 'Unfortunately, your system misses the PyQt4 packages.'
     quit()
 
+from odml import *
+from datetime import *
+
 class MetadataEntry(QtGui.QWidget):
     """This class creates label-and-lineedit-combinations in the tabs and allows for feedback communication."""
 
-    def __init__(self, listname, entryname, entry, parent=None):
+    def __init__(self, prop, parent=None):
         QtGui.QWidget.__init__(self, parent)
+        self.prop = prop.clone()
 
-        self.listname = listname
-        self.entryname = entryname
-
-        self.label = QtGui.QLabel(entryname + ':')
-        self.lineedit = QtGui.QLineEdit(str(entry))
-
+        self.label = QtGui.QLabel(self.prop.name + ':')
+        self.line_edit = QtGui.QLineEdit(str(self.prop.value.value))
+        if self.prop.value.dtype == 'date' and not self.prop.value.value:
+            d = datetime.today()
+            self.line_edit.setText('{0}-{1}-{2}'.format(d.year, d.month, d.day))
         self.layout = QtGui.QHBoxLayout()
         self.setLayout(self.layout)
 
         self.layout.addWidget(self.label)
-        self.layout.addWidget(self.lineedit)
-
-        #self.connect(self.lineedit, QtCore.SIGNAL('editingFinished()'), self.data_changed)
-        #self.connect(self, QtCore.SIGNAL('metadata_changed(PyQt_PyObject)'), parent.metadata_changed)
+        self.layout.addWidget(self.line_edit)
+        self.connect(self.line_edit, QtCore.SIGNAL('editingFinished()'), self.data_changed)
 
     def data_changed(self):
-        package = dict()
-        package['listname'] = self.listname
-        package['entryname'] = self.entryname
-        package['entry'] = self.lineedit.text()
-        self.emit(QtCore.SIGNAL('metadata_changed(PyQt_PyObject)'), package)
+        self.prop.value.value = self.line_edit.text()
+

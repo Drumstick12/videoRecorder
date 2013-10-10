@@ -110,21 +110,21 @@ class Main(QtGui.QMainWindow):
         self.button_a = QtGui.QPushButton('Start Recording')
         self.button_b = QtGui.QPushButton('Stop')
         self.button_c = QtGui.QPushButton('Play')
-        self.button_d = QtGui.QPushButton('Save')
+        self.save_btn = QtGui.QPushButton('Save')
         self.button_e = QtGui.QPushButton('Discard')
         self.button_f = QtGui.QPushButton('Comment')
 
         self.button_a.setMinimumHeight(50)
         self.button_b.setMinimumHeight(50)
         self.button_c.setMinimumHeight(50)
-        self.button_d.setMinimumHeight(50)
+        self.save_btn.setMinimumHeight(50)
         self.button_e.setMinimumHeight(50)
         self.button_f.setMinimumHeight(50)
 
         self.bottom_layout.addWidget(self.button_a)
         self.bottom_layout.addWidget(self.button_b)
         self.bottom_layout.addWidget(self.button_c)
-        self.bottom_layout.addWidget(self.button_d)
+        self.bottom_layout.addWidget(self.save_btn)
         self.bottom_layout.addWidget(self.button_e)
         self.bottom_layout.addWidget(self.button_f)
 
@@ -167,7 +167,7 @@ class Main(QtGui.QMainWindow):
         self.connect(self.button_a, QtCore.SIGNAL('clicked()'), self.bt_a)
         self.connect(self.button_b, QtCore.SIGNAL('clicked()'), self.bt_b)
         self.connect(self.button_c, QtCore.SIGNAL('clicked()'), self.bt_c)
-        self.connect(self.button_d, QtCore.SIGNAL('clicked()'), self.bt_d)
+        self.connect(self.save_btn, QtCore.SIGNAL('clicked()'), self.save_data)
         self.connect(self.button_e, QtCore.SIGNAL('clicked()'), self.bt_e)
         self.connect(self.button_f, QtCore.SIGNAL('clicked()'), self.bt_f)
 
@@ -240,9 +240,7 @@ class Main(QtGui.QMainWindow):
         tab.setLayout(tab_layout)
 
 
-        self.video_canvas =
-
-         # camera @fabee: detect cameras and create tabs
+        # camera @fabee: detect cameras and create tabs
         self.cameras = [Camera()]
         for c in self.cameras:
             c.open()
@@ -271,7 +269,13 @@ class Main(QtGui.QMainWindow):
     def bt_c(self):
         pass
 
-    def bt_d(self):
+    def save_data(self):
+        #TODO get data,
+        #TODO get metadata form each tab
+        #create a Dataset section
+        #create odml Document
+
+
         pass
 
     def bt_e(self):
@@ -295,13 +299,7 @@ class Main(QtGui.QMainWindow):
 
     # called by metadata-entries in tabs
     # ADAPT to your needs
-    def metadata_changed(self, package):
-        # update metadata dictionaries
-        #self.metadata[package['listname']][package['entryname']] = package['entry']
 
-        # instead of showing this here, you could update your running program or whatever
-        #print 'metadata changed:', package['listname'], package['entryname'], package['entry']
-        pass
 
     # ACTIONS
     # Actions can be used to assign keyboard-shortcuts

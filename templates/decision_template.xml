@@ -48,22 +48,6 @@ ode.org/odml"?>
       <definition>The date the recording session ended (YYYY-MM-DD
       format).</definition>
     </property> 
-    
-    <property>
-      <name>StartTime</name>
-      <value>
-	<type>time</type>
-      </value>
-      <definition>The time the recordings began (hh:mm:ss format).</definition>
-    </property> 
-    
-    <property>
-      <name>EndTime</name>
-      <value>
-	<type>time</type>
-      </value>
-      <definition>The time the recordings ended (hh:mm:ss format).</definition>
-    </property> 
   </section> 
   <!-- ********************************************************* -->
   <!--                  Experiment section                       -->
