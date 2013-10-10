@@ -23,8 +23,8 @@ class MetadataEntry(QtGui.QWidget):
         self.layout.addWidget(self.label)
         self.layout.addWidget(self.lineedit)
 
-        self.connect(self.lineedit, QtCore.SIGNAL('editingFinished()'), self.data_changed)
-        self.connect(self, QtCore.SIGNAL('metadata_changed(PyQt_PyObject)'), parent.metadata_changed)
+        #self.connect(self.lineedit, QtCore.SIGNAL('editingFinished()'), self.data_changed)
+        #self.connect(self, QtCore.SIGNAL('metadata_changed(PyQt_PyObject)'), parent.metadata_changed)
 
     def data_changed(self):
         package = dict()

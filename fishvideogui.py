@@ -4,6 +4,7 @@ sys.path.append('../')
 
 from MetadataEntry import MetadataEntry
 from VideoCanvas import VideoCanvas
+from MetadataTab import MetadataTab
 import numpy as np
 from PIL import Image as image
 from PIL import ImageQt as iqt
@@ -53,7 +54,7 @@ except:
 class Main(QtGui.QMainWindow):
     def __init__(self, parent=None):
         QtGui.QMainWindow.__init__(self, parent)
-
+        self.metadata_tabs = dict()
         # #######################################
         # GEOMETRY of mainwindow at start-up
 
@@ -90,14 +91,12 @@ class Main(QtGui.QMainWindow):
         self.videos.setMinimumWidth(min_tab_width)
         self.videos.setMaximumWidth(max_tab_width)
 
-
-
-        self.tab = QtGui.QTabWidget()
-        self.tab.setMinimumWidth(min_tab_width)
-        self.tab.setMaximumWidth(max_tab_width)
+        self.metadata = QtGui.QTabWidget()
+        self.metadata.setMinimumWidth(min_tab_width)
+        self.metadata.setMaximumWidth(max_tab_width)
 
         self.top_layout.addWidget(self.videos)
-        self.top_layout.addWidget(self.tab)
+        self.top_layout.addWidget(self.metadata)
 
 
 
@@ -229,9 +228,10 @@ class Main(QtGui.QMainWindow):
             print ('failed to load metadata template! {0}'.format(template))
             return
 
-        self.pages = dict()
+        self.metadata_tabs.clear()
         for s in temp.sections:
-            self.create_tab(s)
+            self.metadata_tabs[s.type] = MetadataTab(s,self.metadata)
+            #self.create_tab(s)
 
     def populateVideoTab(self):
         tab = (QtGui.QWidget())
@@ -248,30 +248,8 @@ class Main(QtGui.QMainWindow):
             c.open()
 
 
-    def create_tab(self, section):
-        """
 
-        @param section:
-        """
-        self.pages[section.type] = (QtGui.QWidget())
-        self.tab.addTab(self.pages[section.type], section.type)
-        self.page_layout = QtGui.QHBoxLayout()
-        self.pages[section.type].setLayout(self.page_layout)
 
-        self.page_scroll = Qt.QScrollArea()
-        self.page_layout.addWidget(self.page_scroll)
-        self.page_scroll_contents = QtGui.QWidget()
-        self.page_scroll_layout = QtGui.QVBoxLayout(self.page_scroll_contents)
-        self.page_scroll_contents.setLayout(self.page_scroll_layout)
-        self.page_scroll.setWidgetResizable(False)
-
-        self.populate_tab(section)
-        self.page_scroll.setWidget(self.page_scroll_contents)
-
-    def populate_tab(self, section):
-        for p in section.properties:
-            entry = MetadataEntry(section.type, p.name, p.value.value, self)
-            self.page_scroll_layout.addWidget(entry)
 
     #Note:
     #Buttons...
