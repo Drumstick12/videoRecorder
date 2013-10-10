@@ -1,5 +1,14 @@
 #! /usr/bin/env python
-__author__ = ''
+import sys
+sys.path.append('../')
+
+from MetadataEntry import MetadataEntry
+from VideoCanvas import VideoCanvas
+import numpy as np
+from PIL import Image as image
+from PIL import ImageQt as iqt
+from Camera import Camera
+__author__ = 'Joerg Henninger, Jan Grewe, Fabian Sinz'
 
 # #######################################
 '''
@@ -21,24 +30,22 @@ Previous Metadata-Tab: CTRL+Page-UP
 try:
     from PyQt4 import QtGui, QtCore, Qt
 except Exception, details:
-    print
-    'Unfortunately, your system misses the PyQt4 packages.'
+    print 'Unfortunately, your system misses the PyQt4 packages.'
     quit()
 
 # import os
-import sys
-sys.path.append('/usr/lib/python2.7/site-packages')
 try:
     import odml
 except:
-    print 'Cannot import odml library for metadata support! Check https://github.com/G-Node/python-odml'
-    quit()
+    sys.path.append('/usr/lib/python2.7/site-packages')
+    try:
+        import odml
+    except:
+        print 'Cannot import odml library for metadata support! Check https://github.com/G-Node/python-odml'
+        quit()
 
-import numpy as np
-from PIL import Image as image
-from PIL import ImageQt as iqt
 
-from IPython import embed
+
 # #######################################
 # THE MAIN GUI WINDOW
 
@@ -48,34 +55,12 @@ class Main(QtGui.QMainWindow):
         QtGui.QMainWindow.__init__(self, parent)
 
         # #######################################
-        # ORGANIZATION
-
-        # DEBUG: some random metadata input
-        metadata_a = dict()
-        metadata_b = dict()
-
-        metadata_a['A'] = 0
-        metadata_a['B'] = 'stuff'
-        metadata_a['C'] = 'lots of stuff'
-
-        metadata_b['A'] = 1
-        metadata_b['B'] = 'more stuff'
-        metadata_b['C'] = 'really a lot of stuff'
-
-        self.metadata = dict()
-        self.metadata['Metadata A'] = metadata_a
-        self.metadata['Metadata B'] = metadata_b
-
-        # #######################################
         # GEOMETRY of mainwindow at start-up
 
-        width = 800
-        height = 600
-        offset_left = 50
-        offset_top = 50
+        width, height = 800, 600
+        offset_left, offset_top = 100, 100
+        max_tab_width, min_tab_width = 500, 500
 
-        max_tab_width = 300
-        min_tab_width = 300
 
         self.setGeometry(offset_left, offset_top, width, height)
         self.setSizePolicy(Qt.QSizePolicy.Maximum, Qt.QSizePolicy.Maximum)
@@ -108,6 +93,12 @@ class Main(QtGui.QMainWindow):
 
         self.top_layout.addWidget(self.video_canvas)
         self.top_layout.addWidget(self.tab)
+
+        # camera @fabee: detect cameras and create tabs
+        self.cameras = [Camera()]
+        for c in self.cameras:
+            c.open()
+
 
         # #######################################
         # POPULATE TAB
@@ -188,9 +179,10 @@ class Main(QtGui.QMainWindow):
 
         # DEBUG
         # a simple timer to create some noise on the canvas
-        self.schneeflocken = QtCore.QTimer()
-        self.connect(self.schneeflocken, QtCore.SIGNAL('timeout()'), self.noise_video)
-        self.schneeflocken.start(1000. / 25.)
+        self.timer = QtCore.QTimer()
+        self.connect(self.timer, QtCore.SIGNAL('timeout()'), self.update_video)
+        self.timer.start(1000./50.)
+
 
     def create_menu_bar(self):
         exit_action = QtGui.QAction(QtGui.QIcon('exit.png'), '&Exit', self)
@@ -260,7 +252,7 @@ class Main(QtGui.QMainWindow):
 
     def populate_tab(self, section):
         for p in section.properties:
-            entry = Metadata_Entry(section.type, p.name, p.value.value, self)
+            entry = MetadataEntry(section.type, p.name, p.value.value, self)
             self.page_scroll_layout.addWidget(entry)
 
     #Note:
@@ -300,16 +292,20 @@ class Main(QtGui.QMainWindow):
                 np.random.random((self.video_canvas.canvas_h, self.video_canvas.canvas_w)) * 256).convert('RGB')
 
         # update canvas
-        self.video_canvas.setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(img)))
+
+        #self.video_canvas.setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(img)))
+        frame = image.fromarray(self.cameras[0].grab_frame())
+        self.video_canvas.setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(frame)))
 
     # called by metadata-entries in tabs
     # ADAPT to your needs
     def metadata_changed(self, package):
         # update metadata dictionaries
-        self.metadata[package['listname']][package['entryname']] = package['entry']
+        #self.metadata[package['listname']][package['entryname']] = package['entry']
 
         # instead of showing this here, you could update your running program or whatever
-        print 'metadata changed:', package['listname'], package['entryname'], package['entry']
+        #print 'metadata changed:', package['listname'], package['entryname'], package['entry']
+        pass
 
     # ACTIONS
     # Actions can be used to assign keyboard-shortcuts
@@ -347,67 +343,16 @@ class Main(QtGui.QMainWindow):
             self.tab.setCurrentIndex(self.tab.count() - 1)
 
 
-    # FUNCTIONS
-    # DEBUG: create some random noise on the canvas
-    def noise_video(self):
-        self.update_video()
+
+
 
 # #######################################
 # GUI HELPER CLASSES
 
 
-class Metadata_Entry(QtGui.QWidget):
-    """This class creates label-and-lineedit-combinations in the tabs and allwos for feedback communication."""
-
-    def __init__(self, listname, entryname, entry, parent=None):
-        QtGui.QWidget.__init__(self, parent)
-
-        self.listname = listname
-        self.entryname = entryname
-
-        self.label = QtGui.QLabel(entryname + ':')
-        self.lineedit = QtGui.QLineEdit(str(entry))
-
-        self.layout = QtGui.QHBoxLayout()
-        self.setLayout(self.layout)
-
-        self.layout.addWidget(self.label)
-        self.layout.addWidget(self.lineedit)
-
-        self.connect(self.lineedit, QtCore.SIGNAL('editingFinished()'), self.data_changed)
-        self.connect(self, QtCore.SIGNAL('metadata_changed(PyQt_PyObject)'), parent.metadata_changed)
-
-    def data_changed(self):
-        package = dict()
-        package['listname'] = self.listname
-        package['entryname'] = self.entryname
-        package['entry'] = self.lineedit.text()
-        self.emit(QtCore.SIGNAL('metadata_changed(PyQt_PyObject)'), package)
 
 
-class VideoCanvas(QtGui.QLabel):
-    """This class creates the video-canvas-widget in the mainwindow by subclassing the QLabel-Widget"""
-    # TODO fix fullscreen scaling of input-image
-    def __init__(self, parent=None):
-        QtGui.QLabel.__init__(self, parent)
-        self.setAlignment(Qt.Qt.AlignVCenter | Qt.Qt.AlignHCenter)
-        self.setSizePolicy(Qt.QSizePolicy.Expanding, Qt.QSizePolicy.Expanding)
-        self.setFrameStyle(Qt.QFrame.Panel | Qt.QFrame.Sunken)
 
-        self.canvas_w = 800
-        self.canvas_h = 600
-        img = image.fromarray(np.zeros((self.canvas_h, self.canvas_w))).convert('RGB')
-        self.setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(img)))
-
-    def resizeEvent(self, QResizeEvent):
-        """ override in-built Qt function """
-        self.resizeImage()
-
-    def setImage(self, pixmap):
-        self.setPixmap(pixmap.scaled(self.size(), Qt.Qt.KeepAspectRatio))
-
-    def resizeImage(self):
-        self.setPixmap(self.pixmap().scaled(self.size(), Qt.Qt.KeepAspectRatio))
 
 # #######################################
 # WORKER CLASSES
