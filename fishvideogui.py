@@ -234,13 +234,13 @@ class Main(QtGui.QMainWindow):
             self.create_tab(s)
 
     def populateVideoTab(self):
-        tab = (QtGui.QWidget())
+        tab = VideoCanvas(parent=self)#(QtGui.QWidget())
         self.videos.addTab(tab, "Video 1")
         tab_layout = QtGui.QHBoxLayout()
         tab.setLayout(tab_layout)
-        
 
-        self.video_canvas = VideoCanvas(parent=tab)
+
+        self.video_canvas =
 
          # camera @fabee: detect cameras and create tabs
         self.cameras = [Camera()]
