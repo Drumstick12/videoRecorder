@@ -1,10 +1,11 @@
 #! /usr/bin/env python
 import sys
 import os
+from nitime.index_utils import tri
 from VideoRecording import VideoRecording
 from default_config import default_template
 sys.path.append('../')
-
+from datetime import date
 from MetadataEntry import MetadataEntry
 from VideoCanvas import VideoCanvas
 from MetadataTab import MetadataTab
@@ -58,7 +59,8 @@ class Main(QtGui.QMainWindow):
     def __init__(self, parent=None):
         QtGui.QMainWindow.__init__(self, parent)
         self.metadata_tabs = dict()
-
+        self.trial_counter = 0
+        self.data_dir = '.'
         # #######################################
         # GEOMETRY of mainwindow at start-up
         width, height = 800, 600
@@ -211,9 +213,9 @@ class Main(QtGui.QMainWindow):
         if not os.path.isdir(path):
             path = os.path.abspath('.')
 
-        fname = QtGui.QFileDialog.getOpenFileName(self, 'Open template',path,"XML files (*.xml *.odml)")
-        if fname:
-            self.populate_metadata_tab(fname)
+        file_name = QtGui.QFileDialog.getOpenFileName(self, 'Open template',path,"XML files (*.xml *.odml)")
+        if file_name:
+            self.populate_metadata_tab(file_name)
 
     def cam_aliases(self):
 
@@ -250,8 +252,22 @@ class Main(QtGui.QMainWindow):
     def create_and_start_new_videorecordings(self):
         # @jan: could choose potentially from PIM1, MJPG, MP42, DIV3, DIVX, U263, I263, FLV1
         # CV_FOURCC('P','I','M','1')    = MPEG-1 codec
-        self.video_recordings = {cam:VideoRecording('trial0_cam%i.avi' % (i), cam.get_resolution(), self.fps, 'FLV1')
+        if self.trial_counter == 0:
+            self.check_data_dir()
+        trial_name = '{0}/trial_{1}'.format(self.data_dir, self.trial_counter)
+        self.video_recordings = {cam:VideoRecording('{0}_cam{1}.avi'.format(trial_name,str(i)), cam.get_resolution(), self.fps, 'FLV1')
                                  for i,cam in enumerate(self.cameras)}
+
+    def check_data_dir(self):
+        today = date.today()  # get today's date as a datetime type
+        today_str = today.isoformat()
+        try:
+            os.mkdir(today_str)
+        except:
+            tmp = os.listdir(today_str)
+            if len(tmp) > 0:
+                self.trial_counter = np.amax([int(e.split('_')[1]) for e in [ee.split('.')[0] for ee in tmp]])+1
+        self.data_dir = today_str
 
     def stop_all_recordings(self):
         for v in self.video_recordings.values():
@@ -287,7 +303,12 @@ class Main(QtGui.QMainWindow):
         self.stop_all_recordings()
         self.button_record.setDisabled(False)
         self.button_stop.setDisabled(True)
+        self.save_metadata()
+        self.trial_counter += 1
 
+    def save_metadata(self):
+        trial_name = '{0}/trial_{1}'.format(self.data_dir, self.trial_counter)
+        pass
 
     def update_video(self):
         for i,cam in enumerate(self.cameras):
