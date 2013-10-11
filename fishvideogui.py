@@ -308,18 +308,31 @@ class Main(QtGui.QMainWindow):
         self.stop_all_recordings()
         self.button_record.setDisabled(False)
         self.button_stop.setDisabled(True)
-        self.save_metadata()
+        self.button_cancel.setDisabled(True)
+        #self.save_metadata()
         self.trial_counter += 1
 
     def save_metadata(self):
-        #TODO get data,
-        #TODO get metadata form each tab
-        #TODO get camera metadata
-        #TODO create a Dataset section
-        #TODO create odml Document
-        trial_name = '{0}/trial_{1}'.format(self.data_dir, self.trial_counter)
+        trial_name = 'trial_{0}'.format(self.trial_counter-1)
+        file_list = [ f for f in os.listdir(self.data_dir) if f.startswith(trial_name) ]
+        # create a document
+        doc = odml.Document()
+        # create dataset section
+        ds = odml.Section('datasets','dataset')
+        p = odml.Property('files',None,dtype='string')
+        for f in file_list:
+           p.append('{0}/{1}'.format(self.data_dir,f))
 
-        pass
+        for t in self.metadata_tabs.values():
+            s = t.get_metadata()
+            print s
+          #  print s.parent
+            #doc.append(t.get_metadata())
+
+        #TODO get camera metadata
+        from odml.tools.xmlparser import XMLWriter
+        writer = XMLWriter(doc)
+        writer.write_file('{0}/{1}.xml'.format(self.data_dir, trial_name) )
 
     def update_video(self):
         for i,cam in enumerate(self.cameras):
