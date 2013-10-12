@@ -24,7 +24,7 @@ ode.org/odml"?>
     
     <property>
       <name>Experimenter</name>
-      <value>
+      <value>Sandra Dangelmayer
 	<type>person</type>
       </value>
       <definition>The name of the person actually performing the
@@ -178,17 +178,7 @@ ode.org/odml"?>
       <definition>The scientific name of the species e.g. Apis
       mellifera, Homo sapiens.</definition>
     </property> 
-    
-    <property>
-      <name>Comment</name>
-      <value>
-	<type>text</type>
-      </value>
-      <definition>A general comment on a specific
-      subject. </definition>
-    </property>
-    
-    
+     
     <property>
       <name>TrivialName</name>
       <value>Black ghost knife fish
@@ -197,6 +187,24 @@ ode.org/odml"?>
       <definition>The trivial name of the species like
       Honeybee, Human.</definition>
     </property> 
+
+    <property>
+      <name>Tank</name>
+      <value>
+	<type>string</type>
+      </value>
+      <definition>The tank in which the subject is housed.</definition>
+    </property>
+
+    <property>
+      <name>Comment</name>
+      <value>
+	<type>text</type>
+      </value>
+      <definition>A general comment on a specific
+      subject. </definition>
+    </property>
+        
   </section> 
 
 </odML>

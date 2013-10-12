@@ -189,6 +189,14 @@ ode.org/odml"?>
     </property> 
     
     <property>
+      <name>Tank</name>
+      <value>
+	<type>string</type>
+      </value>
+      <definition>The tank in which the subject is housed.</definition>
+    </property>
+    
+    <property>
       <name>Comment</name>
       <value>
 	<type>text</type>
@@ -196,6 +204,5 @@ ode.org/odml"?>
       <definition>A general comment on a specific
       subject. </definition>
     </property>
-    
   </section> 
 </odML>
