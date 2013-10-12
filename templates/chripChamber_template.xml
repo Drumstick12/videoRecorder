@@ -25,7 +25,7 @@ ode.org/odml"?>
     <property>
       <name>Experimenter</name>
       <value>Juan Sehuanes
-	<type>person</type>
+      <type>person</type>
       </value>
       <definition>The name of the person actually performing the
       recordings.</definition>
@@ -172,11 +172,20 @@ ode.org/odml"?>
     
     <property>
       <name>Species</name>
-      <value>
-	<type>string</type>
+      <value>Apteronotus leptorhynchus
+      <type>string</type>
       </value>
       <definition>The scientific name of the species e.g. Apis
       mellifera, Homo sapiens.</definition>
+    </property> 
+    
+    <property>
+      <name>TrivialName</name>
+      <value>Brown ghost knife fish
+      <type>string</type>
+      </value>
+      <definition>The trivial name of the species like
+      Honeybee, Human.</definition>
     </property> 
     
     <property>
@@ -188,39 +197,5 @@ ode.org/odml"?>
       subject. </definition>
     </property>
     
-    
-    <property>
-      <name>TrivialName</name>
-      <value>
-	<type>string</type>
-      </value>
-      <definition>The trivial name of the species like
-      Honeybee, Human.</definition>
-    </property> 
-    
-    <property>
-      <name>Gender</name>
-      <value>
-	<type>string</type>
-      </value>
-      <definition>Male or female?</definition>
-    </property> 
-    
-    <property>
-      <name>Birthday</name>
-      <value>
-	<type>date</type>
-      </value>  
-      <definition> The birthday. Age can be inferred from the
-      date of recording.</definition>
-    </property> 
-    <property>
-      <name>Age</name>
-      <value>
-	<type>string</type>
-      </value>
-      <definition>The age of the subject since birth. E.g. P19,
-      or 5 days.</definition>
-    </property> 
   </section> 
 </odML>
