@@ -5,7 +5,7 @@ except Exception, details:
     print 'Unfortunately, your system misses the PyQt4 packages.'
     quit()
 
-from odml import *
+import odml
 from MetadataEntry import MetadataEntry
 
 class MetadataTab(QtGui.QWidget):
@@ -22,26 +22,29 @@ class MetadataTab(QtGui.QWidget):
         self.scroll_contents = QtGui.QWidget()
         self.scroll_layout = QtGui.QVBoxLayout(self.scroll_contents)
         self.parent.addTab(self, self.section.type)
-        self.create_tab(self.section)
+        self.name_entry = None
+        self.entries = {}
+        self.create_tab()
 
-    def create_tab(self, section):
-
+    def create_tab(self):
+        self.entries.clear()
+        self.name_entry = None
         self.scroll_contents.setLayout(self.scroll_layout)
         self.page_scroll.setWidgetResizable(False)
-
         self.populate_tab()
         self.page_scroll.setWidget(self.scroll_contents)
 
-    def metadata(self):
-        return self.section
-
     def populate_tab(self):
+        p = odml.Property("name",self.section.name)
+        self.name_entry = MetadataEntry(p, self)
+        self.scroll_layout.addWidget(self.name_entry)
         for p in self.section.properties:
-            entry = MetadataEntry(p, self.parent)
+            entry = MetadataEntry(p, self)
+            self.entries[p.name] = entry
             self.scroll_layout.addWidget(entry)
 
-    def get_metadata(self):
-        for p in self.section.properties:
-            print p.name, p.value.value
-        pass
-
+    def metadata(self):
+        s = odml.Section(self.name_entry.get_property().value.value,type=self.section.type)
+        for e in self.entries.values():
+            s.append(e.get_property())
+        return s

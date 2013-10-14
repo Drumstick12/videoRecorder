@@ -22,7 +22,8 @@ class MetadataEntry(QtGui.QWidget):
             self.line_edit.setText('{0}-{1}-{2}'.format(d.year, d.month, d.day))
         self.layout = QtGui.QHBoxLayout()
         self.setLayout(self.layout)
-
+        if(self.prop.value.definition):
+            self.setToolTip(self.prop.value.definition)
         self.layout.addWidget(self.label)
         self.layout.addWidget(self.line_edit)
         self.connect(self.line_edit, QtCore.SIGNAL('editingFinished()'), self.data_changed)
@@ -30,3 +31,5 @@ class MetadataEntry(QtGui.QWidget):
     def data_changed(self):
         self.prop.value.value = self.line_edit.text()
 
+    def get_property(self):
+        return self.prop

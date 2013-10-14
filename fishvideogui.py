@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 import sys
 import os
+import glob
 from nitime.index_utils import tri
 from VideoRecording import VideoRecording
 from default_config import default_template
@@ -255,7 +256,8 @@ class Main(QtGui.QMainWindow):
         # CV_FOURCC('P','I','M','1')    = MPEG-1 codec
         if self.trial_counter == 0:
             self.check_data_dir()
-        trial_name = '{0}/trial_{1}'.format(self.data_dir, self.trial_counter)
+        #trial_name = '%s/trial_%04i' % (self.data_dir, self.trial_counter)
+        trial_name = '{0:s}/trial_{1:04d}'.format(self.data_dir, self.trial_counter)
         self.video_recordings = {cam:VideoRecording('{0}_cam{1}.avi'.format(trial_name,str(i)), cam.get_resolution(), self.fps, 'FLV1')
                                  for i,cam in enumerate(self.cameras)}
 
@@ -297,10 +299,8 @@ class Main(QtGui.QMainWindow):
 
     def clicked_cancel(self):
         self.clicked_stop()
-        trial_name = 'trial_{0}'.format(self.trial_counter-1)
-        file_list = [ f for f in os.listdir(self.data_dir) if f.startswith(trial_name) ]
-        for f in file_list:
-            os.remove('{0}/{1}'.format(self.data_dir,f))
+        trial_name = 'trial_{0:04d}'.format(self.trial_counter-1)
+        map(os.remove, glob.glob(self.data_dir+'/'+trial_name+'*'))
         self.check_data_dir()
         self.button_cancel.setEnabled(False)
 
@@ -309,30 +309,32 @@ class Main(QtGui.QMainWindow):
         self.button_record.setDisabled(False)
         self.button_stop.setDisabled(True)
         self.button_cancel.setDisabled(True)
-        #self.save_metadata()
+        self.save_metadata()
         self.trial_counter += 1
 
     def save_metadata(self):
-        trial_name = 'trial_{0}'.format(self.trial_counter-1)
-        file_list = [ f for f in os.listdir(self.data_dir) if f.startswith(trial_name) ]
+        trial_name = 'trial_{0:04d}'.format(self.trial_counter)
+        file_list = [f for f in os.listdir(self.data_dir) if f.startswith(trial_name)]
         # create a document
         doc = odml.Document()
         # create dataset section
         ds = odml.Section('datasets','dataset')
-        p = odml.Property('files',None,dtype='string')
+        p = odml.Property('files', None)
+        ds.append(p)
         for f in file_list:
-           p.append('{0}/{1}'.format(self.data_dir,f))
+           p.append('{0}/{1}'.format(self.data_dir,f), dtype='string')
+        doc.append(ds)
 
         for t in self.metadata_tabs.values():
-            s = t.get_metadata()
-            print s
-          #  print s.parent
-            #doc.append(t.get_metadata())
+            doc.append(t.metadata())
 
+        #for n,c in self.cameras.items():
+        #    s = odml.Section(n,'hardware/camera')
+        #    for p in c
         #TODO get camera metadata
         from odml.tools.xmlparser import XMLWriter
         writer = XMLWriter(doc)
-        writer.write_file('{0}/{1}.xml'.format(self.data_dir, trial_name) )
+        writer.write_file('{0}/{1}.xml'.format(self.data_dir, trial_name))
 
     def update_video(self):
         for i,cam in enumerate(self.cameras):
