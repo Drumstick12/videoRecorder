@@ -4,7 +4,8 @@ import os
 import glob
 from nitime.index_utils import tri
 from VideoRecording import VideoRecording
-from default_config import default_template
+from default_config import default_template, camera_device_search_range, camera_name_format
+
 sys.path.append('../')
 from datetime import date
 from MetadataEntry import MetadataEntry
@@ -241,13 +242,14 @@ class Main(QtGui.QMainWindow):
             self.metadata_tabs[s.type] = MetadataTab(s,self.metadata)
 
     def populate_video_tabs(self):
-        self.cameras = [cam for cam in [Camera(i) for i in xrange(20)] if cam.is_working()]
+        tmp = [cam for cam in [Camera(i) for i in camera_device_search_range] if cam.is_working()]
+        self.cameras = {camera_name_format % j: v for j,v in enumerate(tmp)}
 
         if len(self.cameras) > 0:
-            for cam in self.cameras:
-                self.video_tabs[cam] = VideoCanvas(parent=self)
-                self.videos.addTab(self.video_tabs[cam], str(cam))
-                self.video_tabs[cam].setLayout(QtGui.QHBoxLayout())
+            for cam_name, cam in self.cameras.items():
+                self.video_tabs[cam_name] = VideoCanvas(parent=self)
+                self.videos.addTab(self.video_tabs[cam_name], cam_name)
+                self.video_tabs[cam_name].setLayout(QtGui.QHBoxLayout())
         else:
             self.videos.addTab(QtGui.QWidget(),"No camera found")
 
@@ -258,8 +260,8 @@ class Main(QtGui.QMainWindow):
             self.check_data_dir()
         #trial_name = '%s/trial_%04i' % (self.data_dir, self.trial_counter)
         trial_name = '{0:s}/trial_{1:04d}'.format(self.data_dir, self.trial_counter)
-        self.video_recordings = {cam:VideoRecording('{0}_cam{1}.avi'.format(trial_name,str(i)), cam.get_resolution(), self.fps, 'FLV1')
-                                 for i,cam in enumerate(self.cameras)}
+        self.video_recordings = {cam_name:VideoRecording('{0}_{1}.avi'.format(trial_name,cam_name), cam.get_resolution(), self.fps, 'FLV1')
+                                 for cam_name, cam in self.cameras.items()}
 
     def check_data_dir(self):
         today = date.today()
@@ -337,12 +339,14 @@ class Main(QtGui.QMainWindow):
         writer.write_file('{0}/{1}.xml'.format(self.data_dir, trial_name))
 
     def update_video(self):
-        for i,cam in enumerate(self.cameras):
+        for cam_name,cam in self.cameras.items():
             frame = cam.grab_frame()
             if self.video_recordings is not None:
-                self.video_recordings[cam].write(frame)
-            if i == self.videos.currentIndex():
-                self.video_tabs[cam].setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(image.fromarray(brg2rgb(frame)))))
+                self.video_recordings[cam_name].write(frame)
+            label = self.videos.tabText(self.videos.currentIndex())
+
+            if label == cam_name:
+                self.video_tabs[cam_name].setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(image.fromarray(brg2rgb(frame)))))
 
     # called by metadata-entries in tabs
     # ADAPT to your needs
