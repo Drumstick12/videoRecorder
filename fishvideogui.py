@@ -330,10 +330,13 @@ class Main(QtGui.QMainWindow):
         for t in self.metadata_tabs.values():
             doc.append(t.metadata())
 
-        #for n,c in self.cameras.items():
-        #    s = odml.Section(n,'hardware/camera')
-        #    for p in c
-        #TODO get camera metadata
+        for cam_name,cam in self.cameras.items():
+            s = odml.Section(cam_name,'hardware/camera')
+            for p,v in cam.get_properties().items():
+                prop = odml.Property(p,v)
+                s.append(prop)
+            doc.append(s)
+
         from odml.tools.xmlparser import XMLWriter
         writer = XMLWriter(doc)
         writer.write_file('{0}/{1}.xml'.format(self.data_dir, trial_name))
