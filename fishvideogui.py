@@ -31,6 +31,8 @@ Previous Metadata-Tab: CTRL+Page-UP
 # #######################################
 
 # TODO video-canvas: full screen does not work properly. why?
+# TODO Key bindings for start and stop of recording
+# TODO validation of meta data tabs. Warn, if info is missing!
 
 # #######################################
 
