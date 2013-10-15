@@ -4,10 +4,11 @@ import os
 import glob
 from nitime.index_utils import tri
 from VideoRecording import VideoRecording
-from default_config import default_template, camera_device_search_range, camera_name_format
+from default_config import default_template, camera_device_search_range, camera_name_format, frames_per_second,\
+    width, height, max_tab_width, min_tab_width, offset_left, offset_top
 
 sys.path.append('../')
-from datetime import date
+from datetime import date, datetime
 from MetadataEntry import MetadataEntry
 from VideoCanvas import VideoCanvas
 from MetadataTab import MetadataTab
@@ -65,13 +66,9 @@ class Main(QtGui.QMainWindow):
         self.metadata_tabs = dict()
         self.trial_counter = 0
         self.data_dir = '.'
+        self.event_list = odml.Section('events','event_list')
+        self.record_timestamp = None
         # #######################################
-        # GEOMETRY of mainwindow at start-up
-        width, height = 800, 600
-        offset_left, offset_top = 100, 100
-        max_tab_width, min_tab_width = 640, 480
-        self.fps = 25
-
         self.setGeometry(offset_left, offset_top, width, height)
         self.setSizePolicy(Qt.QSizePolicy.Maximum, Qt.QSizePolicy.Maximum)
         self.setMinimumSize(width, height)
@@ -116,17 +113,21 @@ class Main(QtGui.QMainWindow):
         self.button_record = QtGui.QPushButton('Start Recording')
         self.button_stop = QtGui.QPushButton('Stop')
         self.button_cancel = QtGui.QPushButton('Cancel')
+        self.button_tag = QtGui.QPushButton('&Tag')
 
         self.button_stop.setDisabled(True)
         self.button_cancel.setDisabled(True)
+        self.button_tag.setDisabled(True)
 
         self.button_record.setMinimumHeight(50)
         self.button_stop.setMinimumHeight(50)
         self.button_cancel.setMinimumHeight(50)
+        self.button_tag.setMinimumHeight(50)
 
         self.bottom_layout.addWidget(self.button_record)
         self.bottom_layout.addWidget(self.button_stop)
         self.bottom_layout.addWidget(self.button_cancel)
+        self.bottom_layout.addWidget(self.button_tag)
 
         # #######################################
         self.create_menu_bar()
@@ -153,7 +154,7 @@ class Main(QtGui.QMainWindow):
         self.datacollector.moveToThread(self.threads['data'])
         self.storage.moveToThread(self.threads['storage'])
 
-        # HERE, WE START THREATS, NOT THE INSTANCES INSIDE !!
+        # HERE, WE START THREADS, NOT THE INSTANCES INSIDE !!
         self.threads['control'].start()
         self.threads['data'].start()
         self.threads['storage'].start()
@@ -167,7 +168,7 @@ class Main(QtGui.QMainWindow):
         self.connect(self.button_cancel, QtCore.SIGNAL('clicked()'), self.clicked_cancel)
         self.connect(self.button_record, QtCore.SIGNAL('clicked()'), self.clicked_record)
         self.connect(self.button_stop, QtCore.SIGNAL('clicked()'), self.clicked_stop)
-
+        self.connect(self.button_tag, QtCore.SIGNAL('clicked()'), self.clicked_tag)
         # tread connections
         # ...
 
@@ -178,7 +179,7 @@ class Main(QtGui.QMainWindow):
         # a simple timer to create some noise on the canvas
         self.timer = QtCore.QTimer()
         self.connect(self.timer, QtCore.SIGNAL('timeout()'), self.update_video)
-        self.timer.start(1000./self.fps)
+        self.timer.start(1000./frames_per_second)
 
 
     def create_menu_bar(self):
@@ -262,7 +263,8 @@ class Main(QtGui.QMainWindow):
             self.check_data_dir()
         #trial_name = '%s/trial_%04i' % (self.data_dir, self.trial_counter)
         trial_name = '{0:s}/trial_{1:04d}'.format(self.data_dir, self.trial_counter)
-        self.video_recordings = {cam_name:VideoRecording('{0}_{1}.avi'.format(trial_name,cam_name), cam.get_resolution(), self.fps, 'FLV1')
+        self.tags = []
+        self.video_recordings = {cam_name:VideoRecording('{0}_{1}.avi'.format(trial_name,cam_name), cam.get_resolution(), frames_per_second, 'FLV1')
                                  for cam_name, cam in self.cameras.items()}
 
     def check_data_dir(self):
@@ -295,10 +297,19 @@ class Main(QtGui.QMainWindow):
 
     # GUI OBJECT CONNECTORS
     # Fill-up!
+
+    def start_stop(self):
+        if self.is_recording:
+            self.clicked_stop()
+        else:
+            self.clicked_record()
+
     def clicked_record(self):
+        self.record_timestamp = str(datetime.now()).split('.')[0]
         self.create_and_start_new_videorecordings()
         self.button_record.setDisabled(True)
         self.button_cancel.setEnabled(True)
+        self.button_tag.setEnabled(True)
         self.button_stop.setDisabled(False)
 
     def clicked_cancel(self):
@@ -307,14 +318,26 @@ class Main(QtGui.QMainWindow):
         map(os.remove, glob.glob(self.data_dir+'/'+trial_name+'*'))
         self.check_data_dir()
         self.button_cancel.setEnabled(False)
+        self.button_tag.setEnabled(False)
 
     def clicked_stop(self):
         self.stop_all_recordings()
         self.button_record.setDisabled(False)
         self.button_stop.setDisabled(True)
         self.button_cancel.setDisabled(True)
+        self.button_tag.setDisabled(True)
         self.save_metadata()
         self.trial_counter += 1
+
+    def clicked_tag(self):
+        ts = str(datetime.now()).split('.')[0]
+        text, ok = QtGui.QInputDialog.getText(self, 'Tag data with Event', 'Enter tag comment:')
+        if ok:
+            tag_name = 'event_{0:02d}'.format(len(self.tags)+1)
+            e = odml.Section(tag_name, 'event')
+            e.append(odml.Property('timestamp', ts, dtype='datetime'))
+            e.append(odml.Property('comment', text, dtype='string'))
+            self.event_list.append(e)
 
     def save_metadata(self):
         trial_name = 'trial_{0:04d}'.format(self.trial_counter)
@@ -330,14 +353,19 @@ class Main(QtGui.QMainWindow):
         doc.append(ds)
 
         for t in self.metadata_tabs.values():
-            doc.append(t.metadata())
+            m = t.metadata()
+            if m.type == 'recording':
+                m.append(odml.Property('StartTime',self.record_timestamp,dtype='datetime'))
+            doc.append(m)
 
         for cam_name,cam in self.cameras.items():
             s = odml.Section(cam_name,'hardware/camera')
+            s.append(odml.Property('Framerate',frames_per_second, dtype='int', unit='Hz'))
             for p,v in cam.get_properties().items():
                 prop = odml.Property(p,v)
                 s.append(prop)
             doc.append(s)
+        doc.append(self.event_list)
 
         from odml.tools.xmlparser import XMLWriter
         writer = XMLWriter(doc)
@@ -355,18 +383,33 @@ class Main(QtGui.QMainWindow):
 
     # called by metadata-entries in tabs
     # ADAPT to your needs
-
+    @property
+    def is_recording(self):
+        return self.video_recordings is not None
 
     # ACTIONS
     # Actions can be used to assign keyboard-shortcuts
     # This method is called in the __init__ method to create keyboard shortcuts
     def create_actions(self):
         # EXAMPLE
-        # Close Program
-        self.action_cancel = QtGui.QAction("Cancel Program", self)
+        # Cancel Recording
+        self.action_cancel = QtGui.QAction("Cancel Recording", self)
         self.action_cancel.setShortcut(Qt.Qt.Key_Escape)
-        self.connect(self.action_cancel, QtCore.SIGNAL('triggered()'), qapp, QtCore.SLOT("quit()"))
+        self.connect(self.action_cancel, QtCore.SIGNAL('triggered()'), self.clicked_cancel)
         self.addAction(self.action_cancel)
+
+        # Create a start stop action
+        self.action_start_stop = QtGui.QAction('Start, stop recording',self)
+        self.action_start_stop.setShortcut(Qt.Qt.CTRL+Qt.Qt.Key_Space)
+        self.connect(self.action_start_stop, QtCore.SIGNAL('triggered()'), self.start_stop)
+        self.addAction(self.action_start_stop)
+
+
+        # Create a Tag
+        self.action_tag = QtGui.QAction('Tag Movie',self)
+        self.action_tag.setShortcut(Qt.Qt.CTRL+Qt.Qt.Key_T)
+        self.connect(self.action_tag, QtCore.SIGNAL('triggered()'), self.clicked_tag)
+        self.addAction(self.action_tag)
 
         # Change Tabs
         self.action_change_tab_left = QtGui.QAction("Go one tab to the right", self)
