@@ -1,14 +1,16 @@
 #! /usr/bin/env python
+
 import sys
 import os
 import glob
+from optparse import OptionParser
 from nitime.index_utils import tri
 from VideoRecording import VideoRecording
 from default_config import default_template, camera_device_search_range, camera_name_format, frames_per_second,\
     width, height, max_tab_width, min_tab_width, offset_left, offset_top
 
 sys.path.append('../')
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from MetadataEntry import MetadataEntry
 from VideoCanvas import VideoCanvas
 from MetadataTab import MetadataTab
@@ -54,25 +56,83 @@ except:
         print 'Cannot import odml library for metadata support! Check https://github.com/G-Node/python-odml'
         quit()
 
-
-
 # #######################################
 # THE MAIN GUI WINDOW
 
 
 class Main(QtGui.QMainWindow):
-    def __init__(self, parent=None):
+    def __init__(self, app, options=None, parent=None):
         QtGui.QMainWindow.__init__(self, parent)
+        self.app = app
         self.metadata_tabs = dict()
         self.trial_counter = 0
         self.data_dir = '.'
-        self.event_list = odml.Section('events','event_list')
+        self.event_list = odml.Section('events', 'event_list')
         self.record_timestamp = None
         # #######################################
         self.setGeometry(offset_left, offset_top, width, height)
         self.setSizePolicy(Qt.QSizePolicy.Maximum, Qt.QSizePolicy.Maximum)
         self.setMinimumSize(width, height)
         self.setWindowTitle('Fish Video GUI')
+
+        # #######################################
+        # HANDLE OPTIONS
+
+        default_xml_template = default_template
+        self.idle_screen = False
+        self.instant_start = False
+        self.programmed_stop = False
+        self.programmed_stop_datetime = None
+
+        if options:
+            # template selection
+            if options.template:
+                template_path = os.path.abspath('./templates')
+                optional_template = os.path.join(template_path, options.template)
+                if os.path.exists(optional_template):
+                    default_xml_template = optional_template
+                else:
+                    print 'Error: chosen template does not exist'
+                    quit()
+
+            # programmed stop-time
+            if options.stop_time:
+                try:
+                    a = datetime.strptime(options.stop_time, '%H:%M:%S')
+                    b = datetime.now()
+                    c = datetime(b.year, b.month, b.day, a.hour, a.minute, a.second)
+                    if c < b:
+                        c += timedelta(days=1)
+                except ValueError:
+                    pass
+                else:
+                    self.programmed_stop = True
+                    self.programmed_stop_datetime = c
+
+                try:
+                    a = datetime.strptime(options.stop_time, '%Y-%m-%d %H:%M:%S')
+                except ValueError:
+                    pass
+                else:
+                    self.programmed_stop = True
+                    self.programmed_stop_datetime = a
+
+                if not self.programmed_stop is True:
+                    print 'Error: allowed stop-time formats are:' \
+                          '\n"HH:MM:SS" and "YY-mm-dd HH:MM:SS"'
+                    quit()
+
+            # output directory
+            if options.output_dir:
+                if os.path.exists(options.output_dir):
+                    self.data_dir = options.output_dir
+                else:
+                    print 'Error: output directory does not exist'
+                    quit()
+
+            # instant start and idle_screen
+            self.instant_start = options.instant_start
+            self.idle_screen = options.idle_screen
 
         # #######################################
         # LAYOUTS
@@ -105,7 +165,7 @@ class Main(QtGui.QMainWindow):
 
         # #######################################
         # POPULATE TAB
-        self.populate_metadata_tab(default_template)
+        self.populate_metadata_tab(default_xml_template)
         self.populate_video_tabs()
 
         # #######################################
@@ -138,26 +198,26 @@ class Main(QtGui.QMainWindow):
         # Some typical applications are examplified.
         # Often, these processes act on different time-scales.
 
-        # INITIATE WORKER COMPONENTS
-        self.controlcenter = ControlCenter()
-        self.datacollector = DataCollector()
-        self.storage = Storage()
-
-        # CREATE THREADS TO MANAGE THE COMPONENTS
-        self.threads = dict()
-        self.threads['control'] = QtCore.QThread(self)
-        self.threads['data'] = QtCore.QThread(self)
-        self.threads['storage'] = QtCore.QThread(self)
-
-        # MOVE COMPONENTS INTO THEIR THREADS
-        self.controlcenter.moveToThread(self.threads['control'])
-        self.datacollector.moveToThread(self.threads['data'])
-        self.storage.moveToThread(self.threads['storage'])
-
-        # HERE, WE START THREADS, NOT THE INSTANCES INSIDE !!
-        self.threads['control'].start()
-        self.threads['data'].start()
-        self.threads['storage'].start()
+        # # INITIATE WORKER COMPONENTS
+        # self.controlcenter = ControlCenter()
+        # self.datacollector = DataCollector()
+        # self.storage = Storage()
+        #
+        # # CREATE THREADS TO MANAGE THE COMPONENTS
+        # self.threads = dict()
+        # self.threads['control'] = QtCore.QThread(self)
+        # self.threads['data'] = QtCore.QThread(self)
+        # self.threads['storage'] = QtCore.QThread(self)
+        #
+        # # MOVE COMPONENTS INTO THEIR THREADS
+        # self.controlcenter.moveToThread(self.threads['control'])
+        # self.datacollector.moveToThread(self.threads['data'])
+        # self.storage.moveToThread(self.threads['storage'])
+        #
+        # # HERE, WE START THREADS, NOT THE INSTANCES INSIDE !!
+        # self.threads['control'].start()
+        # self.threads['data'].start()
+        # self.threads['storage'].start()
 
         # #######################################
         # CONNECTIONS
@@ -169,13 +229,14 @@ class Main(QtGui.QMainWindow):
         self.connect(self.button_record, QtCore.SIGNAL('clicked()'), self.clicked_record)
         self.connect(self.button_stop, QtCore.SIGNAL('clicked()'), self.clicked_stop)
         self.connect(self.button_tag, QtCore.SIGNAL('clicked()'), self.clicked_tag)
-        # tread connections
-        # ...
 
         # create keyboard shortcuts
         self.create_actions()
 
-        # DEBUG
+        # instant start
+        if self.instant_start:
+            self.clicked_record()
+
         # a simple timer to create some noise on the canvas
         self.timer = QtCore.QTimer()
         self.connect(self.timer, QtCore.SIGNAL('timeout()'), self.update_video)
@@ -219,7 +280,7 @@ class Main(QtGui.QMainWindow):
         if not os.path.isdir(path):
             path = os.path.abspath('.')
 
-        file_name = QtGui.QFileDialog.getOpenFileName(self, 'Open template',path,"XML files (*.xml *.odml)")
+        file_name = QtGui.QFileDialog.getOpenFileName(self, 'Open template', path, "XML files (*.xml *.odml)")
         if file_name:
             self.populate_metadata_tab(file_name)
 
@@ -236,7 +297,7 @@ class Main(QtGui.QMainWindow):
         try:
             temp = odml.tools.xmlparser.load(template)
         except:
-            print ('failed to load metadata template! {0}'.format(template))
+            print('failed to load metadata template! {0}'.format(template))
             return
 
         self.metadata_tabs.clear()
@@ -246,7 +307,7 @@ class Main(QtGui.QMainWindow):
 
     def populate_video_tabs(self):
         tmp = [cam for cam in [Camera(i) for i in camera_device_search_range] if cam.is_working()]
-        self.cameras = {camera_name_format % j: v for j,v in enumerate(tmp)}
+        self.cameras = {camera_name_format % j: v for j, v in enumerate(tmp)}
 
         if len(self.cameras) > 0:
             for cam_name, cam in self.cameras.items():
@@ -254,7 +315,7 @@ class Main(QtGui.QMainWindow):
                 self.videos.addTab(self.video_tabs[cam_name], cam_name)
                 self.video_tabs[cam_name].setLayout(QtGui.QHBoxLayout())
         else:
-            self.videos.addTab(QtGui.QWidget(),"No camera found")
+            self.videos.addTab(QtGui.QWidget(), "No camera found")
 
     def create_and_start_new_videorecordings(self):
         # @jan: could choose potentially from PIM1, MJPG, MP42, DIV3, DIVX, U263, I263, FLV1
@@ -263,9 +324,19 @@ class Main(QtGui.QMainWindow):
             self.check_data_dir()
         #trial_name = '%s/trial_%04i' % (self.data_dir, self.trial_counter)
         trial_name = '{0:s}/trial_{1:04d}'.format(self.data_dir, self.trial_counter)
-        self.tags = []
-        self.video_recordings = {cam_name:VideoRecording('{0}_{1}.avi'.format(trial_name,cam_name), cam.get_resolution(), frames_per_second, 'FLV1')
+        self.tags = list()
+        self.video_recordings = {cam_name: VideoRecording('{0}_{1}.avi'.format(trial_name, cam_name),
+                                                          '{0}_{1}_metadata.dat'.format(trial_name, cam_name),
+                                                          cam.get_resolution(),
+                                                          frames_per_second,
+                                                          'FLV1')
                                  for cam_name, cam in self.cameras.items()}
+
+        # drop timestamp for start or recording
+        trial_info_filename = '{0:s}/trial_{1:04d}_info.dat'.format(self.data_dir, self.trial_counter)
+        with open(trial_info_filename, 'w') as f:
+            timestamp = datetime.now().strftime("start-time: %Y-%m-%d  %H:%M:%S:%f")[:-3]
+            f.write(timestamp+'\n')
 
     def check_data_dir(self):
         today = date.today()
@@ -279,8 +350,13 @@ class Main(QtGui.QMainWindow):
             if len(tmp) > 0:
                 self.trial_counter = np.amax([int(e.split('_')[1]) for e in [ee.split('.')[0] for ee in tmp]])+1
 
-
     def stop_all_recordings(self):
+        # drop timestamp for stop
+        trial_info_filename = '{0:s}/trial_{1:04d}_info.dat'.format(self.data_dir, self.trial_counter)
+        with open(trial_info_filename, 'a') as f:
+            timestamp = datetime.now().strftime("stop-time: %Y-%m-%d  %H:%M:%S:%f")[:-3]
+            f.write(timestamp+'\n')
+
         for v in self.video_recordings.values():
             v.stop()
         self.video_recordings = None
@@ -346,20 +422,20 @@ class Main(QtGui.QMainWindow):
         # create a document
         doc = odml.Document()
         # create dataset section
-        ds = odml.Section('datasets','dataset')
+        ds = odml.Section('datasets', 'dataset')
         p = odml.Property('files', None)
         ds.append(p)
         for f in file_list:
-           p.append('{0}/{1}'.format(self.data_dir,f))
+           p.append('{0:s}/{1:s}'.format(self.data_dir, f))
         doc.append(ds)
 
         for t in self.metadata_tabs.values():
             m = t.metadata()
             if m.type == 'recording':
-                m.append(odml.Property('StartTime',self.record_timestamp,dtype='datetime'))
+                m.append(odml.Property('StartTime', self.record_timestamp, dtype='datetime'))
             doc.append(m)
 
-        for cam_name,cam in self.cameras.items():
+        for cam_name, cam in self.cameras.items():
             s = odml.Section(cam_name,'hardware/camera')
             v = odml.Value(frames_per_second, unit="Hz")
             s.append(odml.Property('Framerate',v)
@@ -374,13 +450,21 @@ class Main(QtGui.QMainWindow):
         writer.write_file('{0}/{1}.xml'.format(self.data_dir, trial_name))
 
     def update_video(self):
-        for cam_name,cam in self.cameras.items():
-            frame = cam.grab_frame()
+        # check for programmed stop-time
+        if self.programmed_stop \
+           and self.programmed_stop_datetime < datetime.now():
+            self.stop_all_recordings()
+            self.app.exit()
+
+        for cam_name, cam in self.cameras.items():
+            frame, dtime = cam.grab_frame()
             if self.video_recordings is not None:
                 self.video_recordings[cam_name].write(frame)
+                self.video_recordings[cam_name].write_metadata(dtime)
+
             label = self.videos.tabText(self.videos.currentIndex())
 
-            if label == cam_name:
+            if label == cam_name and not self.idle_screen:
                 self.video_tabs[cam_name].setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(image.fromarray(brg2rgb(frame)))))
 
     # called by metadata-entries in tabs
@@ -438,46 +522,48 @@ class Main(QtGui.QMainWindow):
             self.tab.setCurrentIndex(self.tab.count() - 1)
 
 
-
-
-
-# #######################################
-# GUI HELPER CLASSES
-
-
-
-
-
-
 # #######################################
 # WORKER CLASSES
 
 
-class ControlCenter(QtCore.QObject):
-    """Put your experiment logic here."""
-
-    def __init__(self, parent=None):
-        QtCore.QObject.__init__(self, parent)
-
-
-class DataCollector(QtCore.QObject):
-    """Collect your data in this class."""
-
-    def __init__(self, parent=None):
-        QtCore.QObject.__init__(self, parent)
-
-
-class Storage(QtCore.QObject):
-    """use this class to store your data periodically."""
-
-    def __init__(self, parent=None):
-        QtCore.QObject.__init__(self, parent)
+# class ControlCenter(QtCore.QObject):
+#     """Put your experiment logic here."""
+#
+#     def __init__(self, parent=None):
+#         QtCore.QObject.__init__(self, parent)
+#
+#
+# class DataCollector(QtCore.QObject):
+#     """Collect your data in this class."""
+#
+#     def __init__(self, parent=None):
+#         QtCore.QObject.__init__(self, parent)
+#
+#
+# class Storage(QtCore.QObject):
+#     """use this class to store your data periodically."""
+#
+#     def __init__(self, parent=None):
+#         QtCore.QObject.__init__(self, parent)
 
 # #######################################
 
 if __name__ == "__main__":
+
+    args = sys.argv
+    to_be_parsed = args[1:]
+
+    # define options parser
+    parser = OptionParser()
+    parser.add_option("-t", "--template", action="store", type="string", dest="template", default='')
+    parser.add_option("-k", "--stop_time", action="store", type="string", dest="stop_time", default='')
+    parser.add_option("-o", "--output_directory", action="store", type="string", dest="output_dir", default='')
+    parser.add_option("-s", "--instant_start", action="store_true", dest="instant_start", default=False)
+    parser.add_option("-i", "--idle_screen", action="store_true", dest="idle_screen", default=False)
+    (options, args) = parser.parse_args(args)
+
     # entering the gui app
     qapp = QtGui.QApplication(sys.argv)  # create the main application
-    main = Main()  # create the mainwindow instance
+    main = Main(qapp, options=options)  # create the mainwindow instance
     main.show()  # show the mainwindow instance
     exit(qapp.exec_())  # start the event-loop: no signals are sent or received without this.

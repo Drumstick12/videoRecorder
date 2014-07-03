@@ -35,7 +35,7 @@ class MetadataTab(QtGui.QWidget):
         self.page_scroll.setWidget(self.scroll_contents)
 
     def populate_tab(self):
-        p = odml.Property("name",self.section.name)
+        p = odml.Property("name", self.section.name)
         self.name_entry = MetadataEntry(p, self)
         self.scroll_layout.addWidget(self.name_entry)
         for p in self.section.properties:
@@ -44,7 +44,7 @@ class MetadataTab(QtGui.QWidget):
             self.scroll_layout.addWidget(entry)
 
     def metadata(self):
-        s = odml.Section(self.name_entry.get_property().value.value,type=self.section.type)
+        s = odml.Section(self.name_entry.get_property().value.value, type=self.section.type)
         for e in self.entries.values():
             s.append(e.get_property())
         return s
