@@ -83,6 +83,7 @@ class Main(QtGui.QMainWindow):
         self.instant_start = False
         self.programmed_stop = False
         self.programmed_stop_datetime = None
+        self.starttime = None
 
         if options:
             # template selection
@@ -144,9 +145,11 @@ class Main(QtGui.QMainWindow):
 
         self.top_layout = QtGui.QHBoxLayout()
         self.bottom_layout = QtGui.QHBoxLayout()
+        self.bottom_info_layout = QtGui.QHBoxLayout()
 
         self.main_layout.addLayout(self.top_layout)
         self.main_layout.addLayout(self.bottom_layout)
+        self.main_layout.addLayout(self.bottom_info_layout)
 
         # #######################################
         # POPULATE TOP LAYOUT
@@ -188,6 +191,15 @@ class Main(QtGui.QMainWindow):
         self.bottom_layout.addWidget(self.button_stop)
         self.bottom_layout.addWidget(self.button_cancel)
         self.bottom_layout.addWidget(self.button_tag)
+
+        self.label_time = QtGui.QLabel('', self)
+        font = self.label_time.font()
+        font.setPointSize(18)
+        self.label_time.setFont(font)
+
+        self.bottom_info_layout.addStretch(0)
+        self.bottom_info_layout.addWidget(self.label_time)
+        self.bottom_info_layout.addStretch(0)
 
         # #######################################
         self.create_menu_bar()
@@ -334,9 +346,14 @@ class Main(QtGui.QMainWindow):
 
         # drop timestamp for start or recording
         trial_info_filename = '{0:s}/trial_{1:04d}_info.dat'.format(self.data_dir, self.trial_counter)
+        self.starttime = datetime.now()
+        timestamp = self.starttime.strftime("%Y-%m-%d  %H:%M:%S")
         with open(trial_info_filename, 'w') as f:
-            timestamp = datetime.now().strftime("start-time: %Y-%m-%d  %H:%M:%S:%f")[:-3]
-            f.write(timestamp+'\n')
+            f.write('start-time: '+timestamp+'\n')
+
+        # display start time
+        time_label = 'start-time: {0:s}   ---  running: {1:s}'.format(timestamp, str(datetime.now()-self.starttime)[:-7])
+        self.label_time.setText(time_label)
 
     def check_data_dir(self):
         today = date.today()
@@ -361,6 +378,8 @@ class Main(QtGui.QMainWindow):
             v.stop()
         self.video_recordings = None
 
+        self.label_time.setText('')
+        self.starttime = None
 
     #Note:
     #Buttons...
@@ -456,16 +475,24 @@ class Main(QtGui.QMainWindow):
             self.stop_all_recordings()
             self.app.exit()
 
+        is_recording = False
         for cam_name, cam in self.cameras.items():
             frame, dtime = cam.grab_frame()
             if self.video_recordings is not None:
                 self.video_recordings[cam_name].write(frame)
                 self.video_recordings[cam_name].write_metadata(dtime)
+                is_recording = True
 
             label = self.videos.tabText(self.videos.currentIndex())
 
             if label == cam_name and not self.idle_screen:
                 self.video_tabs[cam_name].setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(image.fromarray(brg2rgb(frame)))))
+
+        if is_recording:
+            # display start time
+            timestamp = self.starttime.strftime("%Y-%m-%d  %H:%M:%S")
+            time_label = 'start-time: {0:s}   ---  running: {1:s}'.format(timestamp, str(datetime.now()-self.starttime)[:-7])
+            self.label_time.setText(time_label)
 
     # called by metadata-entries in tabs
     # ADAPT to your needs
