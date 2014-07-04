@@ -338,7 +338,7 @@ class Main(QtGui.QMainWindow):
             e = odml.Section(tag_name, 'event')
             v = odml.Value(ts, dtype="datetime")
             e.append(odml.Property('timestamp', v))
-            e.append(odml.Property('comment', text)
+            e.append(odml.Property('comment', text))
             self.event_list.append(e)
 
     def save_metadata(self):
@@ -363,7 +363,7 @@ class Main(QtGui.QMainWindow):
         for cam_name,cam in self.cameras.items():
             s = odml.Section(cam_name,'hardware/camera')
             v = odml.Value(frames_per_second, unit="Hz")
-            s.append(odml.Property('Framerate',v)
+            s.append(odml.Property('Framerate',v))
             for p,v in cam.get_properties().items():
                 prop = odml.Property(p,v)
                 s.append(prop)
