@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+
 import sys
 import os
 import glob
@@ -440,11 +441,11 @@ class Main(QtGui.QMainWindow):
         # create a document
         doc = odml.Document()
         # create dataset section
-        ds = odml.Section('datasets','dataset')
+        ds = odml.Section('datasets', 'dataset')
         p = odml.Property('files', None)
         ds.append(p)
         for f in file_list:
-           p.append('{0}/{1}'.format(self.data_dir,f))
+           p.append('{0}/{1}'.format(self.data_dir, f))
         doc.append(ds)
 
         for t in self.metadata_tabs.values():
@@ -459,7 +460,7 @@ class Main(QtGui.QMainWindow):
             v = odml.Value(frames_per_second, unit="Hz")
             s.append(odml.Property('Framerate',v))
             for p,v in cam.get_properties().items():
-                prop = odml.Property(p,v)
+                prop = odml.Property(p, v)
                 s.append(prop)
             doc.append(s)
         doc.append(self.event_list)
