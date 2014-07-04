@@ -450,7 +450,8 @@ class Main(QtGui.QMainWindow):
         for t in self.metadata_tabs.values():
             m = t.metadata()
             if m.type == 'recording':
-                m.append(odml.Property('StartTime',self.record_timestamp,dtype='datetime'))
+                v = odml.Value(self.record_timestamp, dtype="datetime")
+                m.append(odml.Property('StartTime', v))
             doc.append(m)
 
         for cam_name,cam in self.cameras.items():
