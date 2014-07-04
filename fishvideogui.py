@@ -1,7 +1,4 @@
 #! /usr/bin/env python
-
-
-
 import sys
 import os
 import glob
@@ -443,20 +440,20 @@ class Main(QtGui.QMainWindow):
         # create a document
         doc = odml.Document()
         # create dataset section
-        ds = odml.Section('datasets', 'dataset')
+        ds = odml.Section('datasets','dataset')
         p = odml.Property('files', None)
         ds.append(p)
         for f in file_list:
-            p.append('{0:s}/{1:s}'.format(self.data_dir, f))
+           p.append('{0}/{1}'.format(self.data_dir,f))
         doc.append(ds)
 
         for t in self.metadata_tabs.values():
             m = t.metadata()
             if m.type == 'recording':
-                m.append(odml.Property('StartTime', self.record_timestamp, dtype='datetime'))
+                m.append(odml.Property('StartTime',self.record_timestamp,dtype='datetime'))
             doc.append(m)
 
-        for cam_name, cam in self.cameras.items():
+        for cam_name,cam in self.cameras.items():
             s = odml.Section(cam_name,'hardware/camera')
             v = odml.Value(frames_per_second, unit="Hz")
             s.append(odml.Property('Framerate',v))
