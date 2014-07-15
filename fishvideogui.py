@@ -29,6 +29,13 @@ Keyboard Shortcuts:
 Quit Program: ESC
 Next Metadata-Tab: CTRL+Page-Down
 Previous Metadata-Tab: CTRL+Page-UP
+
+== OPTIONS ==
+-u --template      -- choose your template by its name
+-k --stop_time      -- define a stop time for your recording; Formats: "HH:MM:SS" and "YY-mm-dd HH:MM:SS"
+-o --output_directory       -- define the output directory of your recordings
+-s --instant_start         -- start the recording instantly without user input
+-i --idle_screen        -- do not display the video frames; this saves quite some computational power
 '''
 
 # #######################################
@@ -74,6 +81,10 @@ class Main(QtGui.QMainWindow):
         self.setSizePolicy(Qt.QSizePolicy.Maximum, Qt.QSizePolicy.Maximum)
         self.setMinimumSize(width, height)
         self.setWindowTitle('Fish Video GUI')
+
+        # #######################################
+
+        self.video_recordings = dict()
 
         # #######################################
         # HANDLE OPTIONS
@@ -177,6 +188,7 @@ class Main(QtGui.QMainWindow):
         self.button_stop = QtGui.QPushButton('Stop')
         self.button_cancel = QtGui.QPushButton('Cancel')
         self.button_tag = QtGui.QPushButton('&Tag')
+        self.button_idle = QtGui.QPushButton('Idle Screen')
 
         self.button_stop.setDisabled(True)
         self.button_cancel.setDisabled(True)
@@ -186,11 +198,13 @@ class Main(QtGui.QMainWindow):
         self.button_stop.setMinimumHeight(50)
         self.button_cancel.setMinimumHeight(50)
         self.button_tag.setMinimumHeight(50)
+        self.button_idle.setMinimumHeight(50)
 
         self.bottom_layout.addWidget(self.button_record)
         self.bottom_layout.addWidget(self.button_stop)
         self.bottom_layout.addWidget(self.button_cancel)
         self.bottom_layout.addWidget(self.button_tag)
+        self.bottom_layout.addWidget(self.button_idle)
 
         self.label_time = QtGui.QLabel('', self)
         font = self.label_time.font()
@@ -241,6 +255,7 @@ class Main(QtGui.QMainWindow):
         self.connect(self.button_record, QtCore.SIGNAL('clicked()'), self.clicked_record)
         self.connect(self.button_stop, QtCore.SIGNAL('clicked()'), self.clicked_stop)
         self.connect(self.button_tag, QtCore.SIGNAL('clicked()'), self.clicked_tag)
+        self.connect(self.button_idle, QtCore.SIGNAL('clicked()'), self.clicked_idle)
 
         # create keyboard shortcuts
         self.create_actions()
@@ -253,7 +268,6 @@ class Main(QtGui.QMainWindow):
         self.timer = QtCore.QTimer()
         self.connect(self.timer, QtCore.SIGNAL('timeout()'), self.update_video)
         self.timer.start(1000./frames_per_second)
-
 
     def create_menu_bar(self):
         self.statusBar()
@@ -297,7 +311,6 @@ class Main(QtGui.QMainWindow):
             self.populate_metadata_tab(file_name)
 
     def cam_aliases(self):
-
         pass
 
     def show_about(self):
@@ -430,10 +443,21 @@ class Main(QtGui.QMainWindow):
         if ok:
             tag_name = 'event_{0:02d}'.format(len(self.tags)+1)
             e = odml.Section(tag_name, 'event')
-            v = odml.Value(ts, dtype="datetime")
-            e.append(odml.Property('timestamp', v))
-            e.append(odml.Property('comment', text))
+            e.append(odml.Property('timestamp', ts, dtype='datetime'))
+            e.append(odml.Property('comment', text, dtype='string'))
             self.event_list.append(e)
+
+    def clicked_idle(self):
+        if self.idle_screen:
+            self.idle_screen = False
+        else:
+            self.idle_screen = True
+            # set idle screen
+            for cam_name, cam in self.cameras.items():
+                canvas_h = self.video_tabs[cam_name].canvas_h 
+                canvas_w = self.video_tabs[cam_name].canvas_w
+                img = image.fromarray(np.zeros((canvas_h, canvas_w))).convert('RGB')
+                self.video_tabs[cam_name].setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(img)))
 
     def save_metadata(self):
         trial_name = 'trial_{0:04d}'.format(self.trial_counter)
@@ -445,21 +469,19 @@ class Main(QtGui.QMainWindow):
         p = odml.Property('files', None)
         ds.append(p)
         for f in file_list:
-           p.append('{0}/{1}'.format(self.data_dir, f))
+            p.append('{0:s}/{1:s}'.format(self.data_dir, f))
         doc.append(ds)
 
         for t in self.metadata_tabs.values():
             m = t.metadata()
             if m.type == 'recording':
-                v = odml.Value(self.record_timestamp, dtype="datetime")
-                m.append(odml.Property('StartTime', v))
+                m.append(odml.Property('StartTime', self.record_timestamp, dtype='datetime'))
             doc.append(m)
 
-        for cam_name,cam in self.cameras.items():
+        for cam_name, cam in self.cameras.items():
             s = odml.Section(cam_name,'hardware/camera')
-            v = odml.Value(frames_per_second, unit="Hz")
-            s.append(odml.Property('Framerate',v))
-            for p,v in cam.get_properties().items():
+            s.append(odml.Property('Framerate', frames_per_second, dtype='int', unit='Hz'))
+            for p, v in cam.get_properties().items():
                 prop = odml.Property(p, v)
                 s.append(prop)
             doc.append(s)
