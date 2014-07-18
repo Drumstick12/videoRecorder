@@ -17,7 +17,7 @@ from MetadataTab import MetadataTab
 import numpy as np
 from PIL import Image as image
 from PIL import ImageQt as iqt
-from Camera import Camera, brg2rgb
+from Camera import Camera, brg2rgb, brg2grayscale
 __author__ = 'Joerg Henninger, Jan Grewe, Fabian Sinz'
 
 # #######################################
@@ -26,9 +26,9 @@ Note:
 QMainWindow allows for funky things like menu- and tool-bars
 
 Keyboard Shortcuts:
-Quit Program: ESC
-Next Metadata-Tab: CTRL+Page-Down
-Previous Metadata-Tab: CTRL+Page-UP
+# Quit Program: ESC
+# Next Metadata-Tab: CTRL+Page-Down
+# Previous Metadata-Tab: CTRL+Page-UP
 
 == OPTIONS ==
 -u --template      -- choose your template by its name
@@ -73,9 +73,11 @@ class Main(QtGui.QMainWindow):
         self.app = app
         self.metadata_tabs = dict()
         self.trial_counter = 0
+        self.output_dir = '.'
         self.data_dir = '.'
         self.event_list = odml.Section('events', 'event_list')
         self.record_timestamp = None
+        self.color = False
         # #######################################
         self.setGeometry(offset_left, offset_top, width, height)
         self.setSizePolicy(Qt.QSizePolicy.Maximum, Qt.QSizePolicy.Maximum)
@@ -99,10 +101,11 @@ class Main(QtGui.QMainWindow):
         if options:
             # template selection
             if options.template:
-                template_path = os.path.abspath('./templates')
+                template_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'templates')
                 optional_template = os.path.join(template_path, options.template)
                 if os.path.exists(optional_template):
                     default_xml_template = optional_template
+                    print 'Template chosen: {0:s}'.format(os.path.basename(default_xml_template))
                 else:
                     print 'Error: chosen template does not exist'
                     quit()
@@ -133,18 +136,27 @@ class Main(QtGui.QMainWindow):
                     print 'Error: allowed stop-time formats are:' \
                           '\n"HH:MM:SS" and "YY-mm-dd HH:MM:SS"'
                     quit()
-
+                else:
+                    print 'Automated Stop activated: {0:s}'.format(str(self.programmed_stop_datetime))
+                
             # output directory
             if options.output_dir:
                 if os.path.exists(options.output_dir):
-                    self.data_dir = options.output_dir
+                    self.output_dir = os.path.realpath(options.output_dir)
+                    print self.output_dir
+                    print 'Output Directory: {0:s}'.format(self.output_dir)
                 else:
                     print 'Error: output directory does not exist'
                     quit()
 
             # instant start and idle_screen
             self.instant_start = options.instant_start
+            if self.instant_start:
+                print 'Instant Start: ON'
             self.idle_screen = options.idle_screen
+            if self.idle_screen:
+                print 'Video Display OFF'
+        print 
 
         # #######################################
         # LAYOUTS
@@ -179,7 +191,8 @@ class Main(QtGui.QMainWindow):
 
         # #######################################
         # POPULATE TAB
-        self.populate_metadata_tab(default_xml_template)
+        default_template_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'templates', default_xml_template)
+        self.populate_metadata_tab(default_template_path)
         self.populate_video_tabs()
 
         # #######################################
@@ -302,7 +315,7 @@ class Main(QtGui.QMainWindow):
         # #######################################
 
     def select_template(self):
-        path = '%s/templates' %os.path.abspath('.')
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'templates')
         if not os.path.isdir(path):
             path = os.path.abspath('.')
 
@@ -354,7 +367,8 @@ class Main(QtGui.QMainWindow):
                                                           '{0}_{1}_metadata.dat'.format(trial_name, cam_name),
                                                           cam.get_resolution(),
                                                           frames_per_second,
-                                                          'FLV1')
+                                                          'XVID',
+                                                          color=False)
                                  for cam_name, cam in self.cameras.items()}
 
         # drop timestamp for start or recording
@@ -371,12 +385,12 @@ class Main(QtGui.QMainWindow):
     def check_data_dir(self):
         today = date.today()
         today_str = today.isoformat()
-        self.data_dir = today_str
+        self.data_dir = os.path.join(self.output_dir, today_str)
         try:
-            os.mkdir(today_str)
+            os.mkdir(self.data_dir)
             self.trial_counter = 0
         except:
-            tmp = os.listdir(today_str)
+            tmp = os.listdir(self.data_dir)
             if len(tmp) > 0:
                 self.trial_counter = np.amax([int(e.split('_')[1]) for e in [ee.split('.')[0] for ee in tmp]])+1
 
@@ -500,7 +514,16 @@ class Main(QtGui.QMainWindow):
 
         is_recording = False
         for cam_name, cam in self.cameras.items():
+            # grab a frame
             frame, dtime = cam.grab_frame()
+            
+            # post-processing
+            if self.color:
+                frame = brg2rgb(frame)
+            else:
+                frame = brg2grayscale(frame)
+            
+            # save frame
             if self.video_recordings is not None:
                 self.video_recordings[cam_name].write(frame)
                 self.video_recordings[cam_name].write_metadata(dtime)
@@ -508,8 +531,9 @@ class Main(QtGui.QMainWindow):
 
             label = self.videos.tabText(self.videos.currentIndex())
 
+            # display frame
             if label == cam_name and not self.idle_screen:
-                self.video_tabs[cam_name].setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(image.fromarray(brg2rgb(frame)))))
+                self.video_tabs[cam_name].setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(image.fromarray(frame))))
 
         if is_recording:
             # display start time

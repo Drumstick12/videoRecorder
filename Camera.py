@@ -5,8 +5,10 @@ __author__ = 'fabee'
 import cv2
 
 def brg2rgb(frame):
-    frame[:,:,:] = frame[:,:,[2,1,0]]
-    return frame
+    return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+def brg2grayscale(frame):
+    return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
 class Camera:
     def __init__(self, device_no=0, post_processor=None):
@@ -33,6 +35,12 @@ class Camera:
     def open(self):
         capture = cv2.VideoCapture(self.device_no)
         self.capture = capture
+        
+        # try to increase the resolution of the frame capture; default is 640x480
+        #~ self.capture.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 864)
+        #~ self.capture.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 480)
+        #~ self.capture.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1280)
+        #~ self.capture.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 720)
 
     def is_working(self):
         return self.capture.isOpened()
