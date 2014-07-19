@@ -1,8 +1,8 @@
 # metadata
-default_template = './templates/continuous_recording_template.xml'
+default_template = 'continuous_recording_template.xml'
 
 # GEOMETRY of mainwindow at start-up
-width, height = 800, 600
+width, height = 1000, 600
 offset_left, offset_top = 100, 100
 max_tab_width, min_tab_width = 640, 480
 
