@@ -18,6 +18,9 @@ import numpy as np
 from PIL import Image as image
 from PIL import ImageQt as iqt
 from Camera import Camera, brg2rgb, brg2grayscale
+# TODO try except
+from RasPiCam import RasPiCam
+
 __author__ = 'Joerg Henninger, Jan Grewe, Fabian Sinz'
 
 # #######################################
@@ -344,7 +347,14 @@ class Main(QtGui.QMainWindow):
             self.metadata_tabs[s.type] = MetadataTab(s,self.metadata)
 
     def populate_video_tabs(self):
-        tmp = [cam for cam in [Camera(i) for i in camera_device_search_range] if cam.is_working()]
+	tmp = []
+	
+	raspicam = RasPiCam()
+	if raspicam.is_working():
+	    tmp = [raspicam]
+	else:
+            tmp = [cam for cam in [Camera(i) for i in camera_device_search_range] if cam.is_working()]
+	
         self.cameras = {camera_name_format % j: v for j, v in enumerate(tmp)}
 
         if len(self.cameras) > 0:

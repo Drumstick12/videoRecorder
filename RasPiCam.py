@@ -1,4 +1,4 @@
-# TODO try except
+# TODO try except?
 import picamera
 import warnings
 from datetime import datetime
@@ -6,9 +6,16 @@ from datetime import datetime
 class RasPiCam(object):
 	def __init__(self):
 		self.camera = None
+		
+		self.open()
 	
 	def open(self):
-		self.camera = picamera.PiCamera()
+		try:
+			self.camera = picamera.PiCamera()
+		except:
+			self.camera = None
+			return
+		
 		self.camera.resolution = (1920,1080)
 		self.camera.framerate = 30
 		self.start_preview()
@@ -20,6 +27,15 @@ class RasPiCam(object):
 		
 	def is_working(self):
 		return self.camera is not None
+	
+	# worker method
+	def is_connected(self):
+		try:
+			test_cam = picamera.PiCamera()
+			test_cam.close()
+			return True
+		except:
+			return False
 	
 	def start_preview(self):
 		self.camera.start_preview()
