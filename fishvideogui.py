@@ -7,6 +7,7 @@ import glob
 from optparse import OptionParser
 from nitime.index_utils import tri
 from VideoRecording import VideoRecording
+from RasPiVideoRecording import RasPiVideoRecording
 from default_config import default_template, camera_device_search_range, camera_name_format, frames_per_second,\
     width, height, max_tab_width, min_tab_width, offset_left, offset_top
 
@@ -374,13 +375,20 @@ class Main(QtGui.QMainWindow):
         #trial_name = '%s/trial_%04i' % (self.data_dir, self.trial_counter)
         trial_name = '{0:s}/trial_{1:04d}'.format(self.data_dir, self.trial_counter)
         self.tags = list()
-        self.video_recordings = {cam_name: VideoRecording('{0}_{1}.avi'.format(trial_name, cam_name),
-                                                          '{0}_{1}_metadata.dat'.format(trial_name, cam_name),
-                                                          cam.get_resolution(),
-                                                          frames_per_second,
-                                                          'XVID',
-                                                          color=False)
-                                 for cam_name, cam in self.cameras.items()}
+	if self.cameras["camera00"].is_raspicam():
+		print "debug"
+		self.video_recordings = {"camera00": RasPiVideoRecording('{0}_{1}.h264'.format(trial_name, "camera00"),
+								'{0}_{1}_metadata.dat'.format(trial_name, "camera00"),
+								"h264",
+								self.cameras["camera00"])}
+	else:
+		self.video_recordings = {cam_name: VideoRecording('{0}_{1}.avi'.format(trial_name, cam_name),
+								'{0}_{1}_metadata.dat'.format(trial_name, cam_name),
+								cam.get_resolution(),
+								frames_per_second,
+								'XVID',
+								color=False)
+					for cam_name, cam in self.cameras.items()}
 
         # drop timestamp for start or recording
         trial_info_filename = '{0:s}/trial_{1:04d}_info.dat'.format(self.data_dir, self.trial_counter)

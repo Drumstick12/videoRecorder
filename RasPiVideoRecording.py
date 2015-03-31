@@ -6,12 +6,15 @@ class RasPiVideoRecording(object):
 		self.cam = raspicam
 		self.filename_metadata = filename_metadata
 		
-		self.cam.start_recording(filename, format=codec)
+		self.cam.camera.start_recording(filename, format=codec)
+	
+	def write(self, x):
+		pass
 	
 	def write_metadata(self, current_datetime):
 		with open(self.filename_metadata, 'ab') as f:
-		pickle.dump(current_datetime, f)
-		f.flush()
+			pickle.dump(current_datetime, f)
+			f.flush()
 		
 	def stop(self):
-		self.cam.stop_recording()
+		self.cam.camera.stop_recording()

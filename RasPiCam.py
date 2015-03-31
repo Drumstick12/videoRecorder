@@ -14,6 +14,7 @@ class RasPiCam(object):
 		self.cv2_stream = None 
 		
 		self.rec_resolution = (1920,1080)
+		# self.rec_resolution = (640,480)
 		self.rec_framerate = 30
 		
 		# (576,324)
