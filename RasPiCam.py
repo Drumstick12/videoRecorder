@@ -82,7 +82,9 @@ class RasPiCam(object):
 	
 	# TODO
 	def get_properties(self):
-		return None
+		ret = {}
+		ret["rasp_framerate"] = self.camera._get_framerate()
+		return ret
 	
 	def is_raspicam(self):
 		return True

@@ -376,7 +376,6 @@ class Main(QtGui.QMainWindow):
         trial_name = '{0:s}/trial_{1:04d}'.format(self.data_dir, self.trial_counter)
         self.tags = list()
 	if self.cameras["camera00"].is_raspicam():
-		print "debug"
 		self.video_recordings = {"camera00": RasPiVideoRecording('{0}_{1}.h264'.format(trial_name, "camera00"),
 								'{0}_{1}_metadata.dat'.format(trial_name, "camera00"),
 								"h264",
