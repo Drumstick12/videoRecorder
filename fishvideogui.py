@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+import cv2
 import sys
 import os
 import glob

@@ -79,6 +79,9 @@ class Camera:
             return self.post_processor(frame, dtime)
         return
 
+    def is_raspicam(self):
+	    return False
+
 
     def close(self):
         pass
