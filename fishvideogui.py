@@ -392,7 +392,7 @@ class Main(QtGui.QMainWindow):
         # drop timestamp for start or recording
         trial_info_filename = '{0:s}/trial_{1:04d}_info.dat'.format(self.data_dir, self.trial_counter)
         self.starttime = datetime.now()
-        timestamp = self.starttime.strftime("%Y-%m-%d  %H:%M:%S")
+        timestamp = self.starttime.strftime("%Y-%m-%d  %H:%M:%S:%f")[:-3]
         with open(trial_info_filename, 'w') as f:
             f.write('start-time: '+timestamp+'\n')
 
