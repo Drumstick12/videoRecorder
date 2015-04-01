@@ -560,6 +560,16 @@ class Main(QtGui.QMainWindow):
             timestamp = self.starttime.strftime("%Y-%m-%d  %H:%M:%S")
             time_label = 'start-time: {0:s}   ---  running: {1:s}'.format(timestamp, str(datetime.now()-self.starttime)[:-7])
             self.label_time.setText(time_label)
+	    
+	    # self.write_times_file()
+
+    def write_times_file(self):
+	for rec in self.video_recordings:
+	    timefile_name = '{0:s}/trial_{1:04d}_times.dat'.format(self.data_dir, self.trial_counter)
+	    print timefile_name
+	
+	with open(timefile_name, 'a') as timefile:
+            timefile.write(str(datetime.now() - self.starttime) + "\n")
 
     # called by metadata-entries in tabs
     # ADAPT to your needs

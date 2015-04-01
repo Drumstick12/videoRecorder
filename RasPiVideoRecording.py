@@ -4,6 +4,7 @@ import cPickle as pickle
 class RasPiVideoRecording(object):
 	def __init__(self, filename, filename_metadata, codec, raspicam):
 		self.cam = raspicam
+		self.filename = filename
 		self.filename_metadata = filename_metadata
 		
 		self.cam.camera.start_recording(filename, format=codec)
