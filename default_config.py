@@ -11,4 +11,4 @@ max_tab_width, min_tab_width = 640, 480
 camera_device_search_range = range(0, 20)
 camera_name_format = 'camera%02i'
 
-frames_per_second = 25
+frames_per_second = 30
