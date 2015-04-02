@@ -8,7 +8,7 @@ from optparse import OptionParser
 from nitime.index_utils import tri
 from VideoRecording import VideoRecording
 from RasPiVideoRecording import RasPiVideoRecording
-from default_config import default_template, camera_device_search_range, camera_name_format, frames_per_second,\
+from default_config import default_template, camera_device_search_range, camera_name_format, frames_per_second, \
     width, height, max_tab_width, min_tab_width, offset_left, offset_top
 
 sys.path.append('../')
@@ -143,7 +143,7 @@ class Main(QtGui.QMainWindow):
                     quit()
                 else:
                     print 'Automated Stop activated: {0:s}'.format(str(self.programmed_stop_datetime))
-                
+
             # output directory
             if options.output_dir:
                 if os.path.exists(options.output_dir):
@@ -161,7 +161,7 @@ class Main(QtGui.QMainWindow):
             self.idle_screen = options.idle_screen
             if self.idle_screen:
                 print 'Video Display OFF'
-        print 
+        print
 
         # #######################################
         # LAYOUTS
@@ -349,14 +349,14 @@ class Main(QtGui.QMainWindow):
             self.metadata_tabs[s.type] = MetadataTab(s,self.metadata)
 
     def populate_video_tabs(self):
-	tmp = []
-	
-	raspicam = RasPiCam()
-	if raspicam.is_working():
-	    tmp = [raspicam]
-	else:
+        tmp = []
+
+        raspicam = RasPiCam()
+        if raspicam.is_working():
+            tmp = [raspicam]
+        else:
             tmp = [cam for cam in [Camera(i) for i in camera_device_search_range] if cam.is_working()]
-	
+
         self.cameras = {camera_name_format % j: v for j, v in enumerate(tmp)}
 
         if len(self.cameras) > 0:
@@ -375,19 +375,19 @@ class Main(QtGui.QMainWindow):
         #trial_name = '%s/trial_%04i' % (self.data_dir, self.trial_counter)
         trial_name = '{0:s}/trial_{1:04d}'.format(self.data_dir, self.trial_counter)
         self.tags = list()
-	if self.cameras["camera00"].is_raspicam():
-		self.video_recordings = {"camera00": RasPiVideoRecording('{0}_{1}.h264'.format(trial_name, "camera00"),
-								'{0}_{1}_metadata.dat'.format(trial_name, "camera00"),
-								"h264",
-								self.cameras["camera00"])}
-	else:
-		self.video_recordings = {cam_name: VideoRecording('{0}_{1}.avi'.format(trial_name, cam_name),
-								'{0}_{1}_metadata.dat'.format(trial_name, cam_name),
-								cam.get_resolution(),
-								frames_per_second,
-								'XVID',
-								color=False)
-					for cam_name, cam in self.cameras.items()}
+        if self.cameras["camera00"].is_raspicam():
+            self.video_recordings = {"camera00": RasPiVideoRecording('{0}_{1}.h264'.format(trial_name, "camera00"),
+                                                                     '{0}_{1}_metadata.dat'.format(trial_name, "camera00"),
+                                                                     "h264",
+                                                                     self.cameras["camera00"])}
+        else:
+            self.video_recordings = {cam_name: VideoRecording('{0}_{1}.avi'.format(trial_name, cam_name),
+                                                              '{0}_{1}_metadata.dat'.format(trial_name, cam_name),
+                                                              cam.get_resolution(),
+                                                              frames_per_second,
+                                                              'XVID',
+                                                              color=False)
+                                     for cam_name, cam in self.cameras.items()}
 
         # drop timestamp for start or recording
         trial_info_filename = '{0:s}/trial_{1:04d}_info.dat'.format(self.data_dir, self.trial_counter)
@@ -486,7 +486,7 @@ class Main(QtGui.QMainWindow):
             self.idle_screen = True
             # set idle screen
             for cam_name, cam in self.cameras.items():
-                canvas_h = self.video_tabs[cam_name].canvas_h 
+                canvas_h = self.video_tabs[cam_name].canvas_h
                 canvas_w = self.video_tabs[cam_name].canvas_w
                 img = image.fromarray(np.zeros((canvas_h, canvas_w))).convert('RGB')
                 self.video_tabs[cam_name].setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(img)))
@@ -528,7 +528,7 @@ class Main(QtGui.QMainWindow):
     def update_video(self):
         # check for programmed stop-time
         if self.programmed_stop \
-           and self.programmed_stop_datetime < datetime.now():
+                and self.programmed_stop_datetime < datetime.now():
             self.stop_all_recordings()
             self.app.exit()
 
@@ -536,13 +536,13 @@ class Main(QtGui.QMainWindow):
         for cam_name, cam in self.cameras.items():
             # grab a frame
             frame, dtime = cam.grab_frame()
-            
+
             # post-processing
             if self.color:
                 frame = brg2rgb(frame)
             else:
                 frame = brg2grayscale(frame)
-            
+
             # save frame
             if self.video_recordings is not None:
                 self.video_recordings[cam_name].write(frame)
@@ -560,15 +560,15 @@ class Main(QtGui.QMainWindow):
             timestamp = self.starttime.strftime("%Y-%m-%d  %H:%M:%S")
             time_label = 'start-time: {0:s}   ---  running: {1:s}'.format(timestamp, str(datetime.now()-self.starttime)[:-7])
             self.label_time.setText(time_label)
-	    
-	    # self.write_times_file()
+
+            # self.write_times_file()
 
     def write_times_file(self):
-	for rec in self.video_recordings:
-	    timefile_name = '{0:s}/trial_{1:04d}_times.dat'.format(self.data_dir, self.trial_counter)
-	    print timefile_name
-	
-	with open(timefile_name, 'a') as timefile:
+        for rec in self.video_recordings:
+            timefile_name = '{0:s}/trial_{1:04d}_times.dat'.format(self.data_dir, self.trial_counter)
+            print timefile_name
+
+        with open(timefile_name, 'a') as timefile:
             timefile.write(str(datetime.now() - self.starttime) + "\n")
 
     # called by metadata-entries in tabs
