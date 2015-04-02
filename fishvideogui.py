@@ -20,8 +20,7 @@ import numpy as np
 from PIL import Image as image
 from PIL import ImageQt as iqt
 from Camera import Camera, brg2rgb, brg2grayscale
-# TODO try except
-from RasPiCam import RasPiCam
+
 
 __author__ = 'Joerg Henninger, Jan Grewe, Fabian Sinz'
 
@@ -49,7 +48,15 @@ Keyboard Shortcuts:
 # TODO Key bindings for start and stop of recording
 # TODO validation of meta data tabs. Warn, if info is missing!
 
-# #######################################
+# ########################################
+
+try:
+	from RasPiCam import RasPiCam
+except Exception, details:
+	print "Your system misses the PiCamera packages. For now the program quits"
+	quit()
+
+#TODO let it run in non-RasPiCam mode
 
 try:
     from PyQt4 import QtGui, QtCore, Qt
