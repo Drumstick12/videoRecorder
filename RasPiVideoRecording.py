@@ -1,5 +1,8 @@
-import picamera
-import cPickle as pickle
+try:
+	import picamera
+	import cPickle as pickle
+except:
+	pass
 
 class RasPiVideoRecording(object):
 	def __init__(self, filename, filename_metadata, codec, raspicam):
