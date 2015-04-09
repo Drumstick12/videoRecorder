@@ -19,8 +19,8 @@ class RasPiCam(object):
 		
 		# (576,324)
 		# fitting: (490,275)
-		self.preview_width = 490
-		self.preview_height = 275
+		self.preview_width = 480
+		self.preview_height = 270
 		self.open()
 	
 	def open(self):
@@ -66,6 +66,16 @@ class RasPiCam(object):
 	
 	def stop_preview(self):
 		self.camera.stop_preview()
+	
+	def increase_preview(self):
+		self.preview_width += 16
+		self.preview_height += 9
+		self.camera.preview.window = (100, 300, self.preview_width, self.preview_height)
+	
+	def decrease_preview(self):
+		self.preview_width -= 16
+		self.preview_height -= 9
+		self.camera.preview.window = (100, 300, self.preview_width, self.preview_height)
 	
 	def grab_frame(self):
 		frame = np.zeros((self.preview_height,self.preview_width,3), np.uint8)
