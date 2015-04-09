@@ -1,10 +1,6 @@
 # TODO try except?
-try:
-	import picamera
-	import picamera.array
-except:
-	pass
-	
+import picamera
+import picamera.array
 import io
 import numpy as np
 import cv2

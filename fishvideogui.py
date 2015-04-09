@@ -7,7 +7,6 @@ import glob
 from optparse import OptionParser
 from nitime.index_utils import tri
 from VideoRecording import VideoRecording
-from RasPiVideoRecording import RasPiVideoRecording
 from default_config import default_template, camera_device_search_range, camera_name_format, frames_per_second, \
     width, height, max_tab_width, min_tab_width, offset_left, offset_top
 
@@ -74,10 +73,13 @@ except:
 class Main(QtGui.QMainWindow):
     def __init__(self, app, options=None, parent=None):
         QtGui.QMainWindow.__init__(self, parent)
+	
 	try:
 		global RasPiCam
 		from RasPiCam import RasPiCam
 		self.picam_packages_loaded = True
+		global RasPiVideoRecording
+		from RasPiVideoRecording import RasPiVideoRecording
 	except Exception, details:
 		print "Picamera Packages not installed. PiCamera not available."
 		
