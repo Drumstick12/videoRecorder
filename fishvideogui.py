@@ -81,6 +81,7 @@ class Main(QtGui.QMainWindow):
 		global RasPiVideoRecording
 		from RasPiVideoRecording import RasPiVideoRecording
 	except Exception, details:
+		self.picam_packages_loaded = False
 		print "Picamera Packages not installed. PiCamera not available."
 		
         self.app = app
