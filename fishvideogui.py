@@ -51,14 +51,6 @@ Keyboard Shortcuts:
 # ########################################
 
 try:
-	from RasPiCam import RasPiCam
-except Exception, details:
-	print "Your system misses the PiCamera packages. For now the program quits"
-	quit()
-
-#TODO let it run in non-RasPiCam mode
-
-try:
     from PyQt4 import QtGui, QtCore, Qt
 except Exception, details:
     print 'Unfortunately, your system misses the PyQt4 packages.'
@@ -82,6 +74,13 @@ except:
 class Main(QtGui.QMainWindow):
     def __init__(self, app, options=None, parent=None):
         QtGui.QMainWindow.__init__(self, parent)
+	try:
+		global RasPiCam
+		from RasPiCam import RasPiCam
+		self.picam_packages_loaded = True
+	except Exception, details:
+		print "Picamera Packages not installed. PiCamera not available."
+		
         self.app = app
         self.metadata_tabs = dict()
         self.trial_counter = 0
@@ -358,11 +357,15 @@ class Main(QtGui.QMainWindow):
     def populate_video_tabs(self):
         tmp = []
 
-        raspicam = RasPiCam()
-        if raspicam.is_working():
-            tmp = [raspicam]
-        else:
-            tmp = [cam for cam in [Camera(i) for i in camera_device_search_range] if cam.is_working()]
+        #raspicam = RasPiCam()
+        #if raspicam.is_working():
+        #    tmp = [raspicam]
+        #else:
+	tmp = [cam for cam in [Camera(i) for i in camera_device_search_range] if cam.is_working()]
+	if self.picam_packages_loaded:
+		raspicam = RasPiCam()
+		if raspicam.is_working():
+			tmp.extend([raspicam])
 
         self.cameras = {camera_name_format % j: v for j, v in enumerate(tmp)}
 
@@ -382,19 +385,25 @@ class Main(QtGui.QMainWindow):
         #trial_name = '%s/trial_%04i' % (self.data_dir, self.trial_counter)
         trial_name = '{0:s}/trial_{1:04d}'.format(self.data_dir, self.trial_counter)
         self.tags = list()
-        if self.cameras["camera00"].is_raspicam():
-            self.video_recordings = {"camera00": RasPiVideoRecording('{0}_{1}.h264'.format(trial_name, "camera00"),
-                                                                     '{0}_{1}_metadata.dat'.format(trial_name, "camera00"),
-                                                                     "h264",
-                                                                     self.cameras["camera00"])}
-        else:
-            self.video_recordings = {cam_name: VideoRecording('{0}_{1}.avi'.format(trial_name, cam_name),
-                                                              '{0}_{1}_metadata.dat'.format(trial_name, cam_name),
-                                                              cam.get_resolution(),
-                                                              frames_per_second,
-                                                              'XVID',
-                                                              color=False)
-                                     for cam_name, cam in self.cameras.items()}
+        #if self.cameras["camera00"].is_raspicam():
+        #    self.video_recordings = {"camera00": RasPiVideoRecording('{0}_{1}.h264'.format(trial_name, "camera00"),
+        #                                                             '{0}_{1}_metadata.dat'.format(trial_name, "camera00"),
+        #                                                             "h264",
+        #                                                             self.cameras["camera00"])}
+        #else:
+	self.video_recordings = {cam_name: (VideoRecording('{0}_{1}.avi'.format(trial_name, cam_name),
+								'{0}_{1}_metadata.dat'.format(trial_name, cam_name),
+								cam.get_resolution(),
+								frames_per_second,
+								'XVID',
+								color=False) 
+								if not cam.is_raspicam() else
+									RasPiVideoRecording('{0}_{1}.h264'.format(trial_name, cam_name),
+										'{0}_{1}_metadata.dat'.format(trial_name, cam_name),
+										"h264",
+										self.cameras[cam_name]))
+					for cam_name, cam in self.cameras.items()}
+	print self.video_recordings
 
         # drop timestamp for start or recording
         trial_info_filename = '{0:s}/trial_{1:04d}_info.dat'.format(self.data_dir, self.trial_counter)
