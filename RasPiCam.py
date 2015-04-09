@@ -7,10 +7,12 @@ import cv2
 import time
 import warnings
 from datetime import datetime
+from RasPiCamController import RasPiCamController
 
 class RasPiCam(object):
 	def __init__(self):
 		self.camera = None
+		self.cam_controller = None
 		self.cv2_stream = None 
 		
 		self.rec_resolution = (1920,1080)
@@ -30,6 +32,7 @@ class RasPiCam(object):
 			self.camera = None
 			return
 		
+		self.cam_controller = RasPiCamController(self.camera)
 		self.camera.resolution = self.rec_resolution
 		self.camera.framerate = self.rec_framerate
 		self.start_preview()
