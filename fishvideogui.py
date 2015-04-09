@@ -73,17 +73,17 @@ except:
 class Main(QtGui.QMainWindow):
     def __init__(self, app, options=None, parent=None):
         QtGui.QMainWindow.__init__(self, parent)
-	
-	try:
-		global RasPiCam
-		from RasPiCam import RasPiCam
-		self.picam_packages_loaded = True
-		global RasPiVideoRecording
-		from RasPiVideoRecording import RasPiVideoRecording
-	except Exception.ImportError:
-		self.picam_packages_loaded = False
-		print "Picamera Packages not installed. PiCamera not available."
-		
+
+        try:
+            global RasPiCam
+            from RasPiCam import RasPiCam
+            self.picam_packages_loaded = True
+            global RasPiVideoRecording
+            from RasPiVideoRecording import RasPiVideoRecording
+        except ImportError:
+            self.picam_packages_loaded = False
+            print "Picamera Packages not installed. PiCamera not available."
+
         self.app = app
         self.metadata_tabs = dict()
         self.trial_counter = 0
@@ -364,11 +364,11 @@ class Main(QtGui.QMainWindow):
         #if raspicam.is_working():
         #    tmp = [raspicam]
         #else:
-	tmp = [cam for cam in [Camera(i) for i in camera_device_search_range] if cam.is_working()]
-	if self.picam_packages_loaded:
-		raspicam = RasPiCam()
-		if raspicam.is_working():
-			tmp.extend([raspicam])
+        tmp = [cam for cam in [Camera(i) for i in camera_device_search_range] if cam.is_working()]
+        if self.picam_packages_loaded:
+            raspicam = RasPiCam()
+            if raspicam.is_working():
+                tmp.extend([raspicam])
 
         self.cameras = {camera_name_format % j: v for j, v in enumerate(tmp)}
 
@@ -394,19 +394,19 @@ class Main(QtGui.QMainWindow):
         #                                                             "h264",
         #                                                             self.cameras["camera00"])}
         #else:
-	self.video_recordings = {cam_name: (VideoRecording('{0}_{1}.avi'.format(trial_name, cam_name),
-								'{0}_{1}_metadata.dat'.format(trial_name, cam_name),
-								cam.get_resolution(),
-								frames_per_second,
-								'XVID',
-								color=False) 
-								if not cam.is_raspicam() else
-									RasPiVideoRecording('{0}_{1}.h264'.format(trial_name, cam_name),
-										'{0}_{1}_metadata.dat'.format(trial_name, cam_name),
-										"h264",
-										self.cameras[cam_name]))
-					for cam_name, cam in self.cameras.items()}
-	print self.video_recordings
+        self.video_recordings = {cam_name: (VideoRecording('{0}_{1}.avi'.format(trial_name, cam_name),
+                                                           '{0}_{1}_metadata.dat'.format(trial_name, cam_name),
+                                                           cam.get_resolution(),
+                                                           frames_per_second,
+                                                           'XVID',
+                                                           color=False)
+                                            if not cam.is_raspicam() else
+                                            RasPiVideoRecording('{0}_{1}.h264'.format(trial_name, cam_name),
+                                                                '{0}_{1}_metadata.dat'.format(trial_name, cam_name),
+                                                                "h264",
+                                                                self.cameras[cam_name]))
+                                 for cam_name, cam in self.cameras.items()}
+        print self.video_recordings
 
         # drop timestamp for start or recording
         trial_info_filename = '{0:s}/trial_{1:04d}_info.dat'.format(self.data_dir, self.trial_counter)
