@@ -14,7 +14,7 @@ class RasPiVideoRecording(object):
 	
 	def write_metadata(self, current_datetime):
 		with open(self.filename_metadata, 'ab') as f:
-			pickle.dump(current_datetime, f)
+			# pickle.dump(current_datetime, f)
 			f.flush()
 		
 	def stop(self):
