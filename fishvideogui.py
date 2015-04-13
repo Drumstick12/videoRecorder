@@ -15,6 +15,7 @@ from datetime import date, datetime, timedelta
 from MetadataEntry import MetadataEntry
 from VideoCanvas import VideoCanvas
 from MetadataTab import MetadataTab
+from RasPiCamControllerTab import RasPiCamControllerTab
 import numpy as np
 from PIL import Image as image
 from PIL import ImageQt as iqt
@@ -189,18 +190,23 @@ class Main(QtGui.QMainWindow):
         self.main_layout.addLayout(self.bottom_info_layout)
 
         # #######################################
-        # POPULATE TOP LAYOUT
+        #  TOP LAYOUT
         self.videos = QtGui.QTabWidget()
         self.videos.setMinimumWidth(min_tab_width)
         self.videos.setMaximumWidth(max_tab_width)
         self.video_recordings = None
         self.video_tabs = {}
+	
+	self.controller = QtGui.QTabWidget()
+	self.controller.setMinimumWidth(min_tab_width)
+	self.controller.setMaximumWidth(max_tab_width)
 
         self.metadata = QtGui.QTabWidget()
         self.metadata.setMinimumWidth(min_tab_width)
         self.metadata.setMaximumWidth(max_tab_width)
 
         self.top_layout.addWidget(self.videos)
+	self.top_layout.addWidget(self.controller)
         self.top_layout.addWidget(self.metadata)
 
         # #######################################
@@ -208,6 +214,7 @@ class Main(QtGui.QMainWindow):
         default_template_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'templates', default_xml_template)
         self.populate_metadata_tab(default_template_path)
         self.populate_video_tabs()
+	self.populate_controller_tabs()
 
         # #######################################
         # POPULATE BOTTOM LAYOUT
@@ -357,13 +364,16 @@ class Main(QtGui.QMainWindow):
         for s in temp.sections:
             self.metadata_tabs[s.type] = MetadataTab(s,self.metadata)
 
+    def populate_controller_tabs(self):
+	if len(self.cameras) > 0:
+		for cam_name, cam in self.cameras.items():
+			if cam.is_raspicam:
+				new_controller_tab = RasPiCamControllerTab(cam)
+				self.controller.addTab(new_controller_tab, cam_name + " - Controller")
+
     def populate_video_tabs(self):
         tmp = []
 
-        #raspicam = RasPiCam()
-        #if raspicam.is_working():
-        #    tmp = [raspicam]
-        #else:
         tmp = [cam for cam in [Camera(i) for i in camera_device_search_range] if cam.is_working()]
         if self.picam_packages_loaded:
             raspicam = RasPiCam()
@@ -388,12 +398,6 @@ class Main(QtGui.QMainWindow):
         #trial_name = '%s/trial_%04i' % (self.data_dir, self.trial_counter)
         trial_name = '{0:s}/trial_{1:04d}'.format(self.data_dir, self.trial_counter)
         self.tags = list()
-        #if self.cameras["camera00"].is_raspicam():
-        #    self.video_recordings = {"camera00": RasPiVideoRecording('{0}_{1}.h264'.format(trial_name, "camera00"),
-        #                                                             '{0}_{1}_metadata.dat'.format(trial_name, "camera00"),
-        #                                                             "h264",
-        #                                                             self.cameras["camera00"])}
-        #else:
         self.video_recordings = {cam_name: (VideoRecording('{0}_{1}.avi'.format(trial_name, cam_name),
                                                            '{0}_{1}_metadata.dat'.format(trial_name, cam_name),
                                                            cam.get_resolution(),
