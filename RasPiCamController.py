@@ -87,7 +87,7 @@ class RasPiCamController(object):
 		self.exposure_mode_options = ['off', 'auto', 'night',  'nightpreview', 'backlight', 'spotlight', 
 									'sports', 'snow', 'beach', 'verylong', 'fixedfps', 'antishake', 'fireworks']
 		self.exposure_mode_default = self.exposure_mode_options[1]
-		self.exposure_mode = AttributeOptions('exposure_mode', self.set_exposure_mode, self.exposure_mode_options, self.exposure_mode_default)
+		self.exposure_mode = AttributeOptions('exposure mode', self.set_exposure_mode, self.exposure_mode_options, self.exposure_mode_default)
 		
 		self.iso_options = [100, 200, 400, 800, 1600]
 		self.iso_default = self.iso_options[0]
@@ -95,7 +95,7 @@ class RasPiCamController(object):
 		
 		self.meter_mode_options = ['average', 'spot', 'backlit', 'matrix']
 		self.meter_mode_default = self.meter_mode_options[0]
-		self.meter_mode = AttributeOptions('meter_mode', self.set_meter_mode, self.meter_mode_options, self.meter_mode_default)
+		self.meter_mode = AttributeOptions('meter mode', self.set_meter_mode, self.meter_mode_options, self.meter_mode_default)
 		
 		self.attributes = [self.brightness, self.contrast, self.iso, self.exposure_compensation, self.exposure_mode, self.meter_mode]
 	
