@@ -1,49 +1,148 @@
+class Attribute(object):
+	def __init__(self, name, handle):
+		self._name = name
+		self._handle = handle
+		
+	@property
+	def name(self):
+		return self._name
+	@name.setter
+	def name(self, value):
+		self._name = value
+	
+	@property
+	def handle(self):
+		return self._handle
+	@handle.setter
+	def handle(self, function):
+		self._handle = function
+
+class AttributeNumber(Attribute):
+	def __init__(self, name, handle, min, max, default):
+		super(AttributeNumber, self).__init__(name, handle)
+		self._min = min
+		self._max = max
+		self._current = default
+	
+	@property
+	def min(self):
+		return self._min
+	@min.setter
+	def min(self, value):
+		self._min = value
+	
+	@property
+	def max(self):
+		return self._max
+	@max.setter
+	def max(self, value):
+		self._max = value
+	
+	@property
+	def current(self):
+		return self._current
+	@current.setter
+	def current(self, value):
+		self._current = value
+
+class AttributeOptions(Attribute):
+	def __init__(self, name, handle, options, default):
+		super(AttributeOptions,self).__init__(name, handle)
+		self._options = options
+		self._current = default
+	
+	@property
+	def options(self):
+		return self._options
+	@options.setter
+	def options(self, option_list):
+		self._options = option_list
+		
+	@property
+	def current(self):
+		return self._current
+	@current.setter
+	def current(self, value):
+		self._current = value
+
 class RasPiCamController(object):
 	def __init__(self, raspicam):
 		self.cam = raspicam
-		#print self.cam._get_camera_settings()
+		
+		self.brightness_min = 0
+		self.brightness_max = 100
+		self.brightness_default = 50
+		self.brightness = AttributeNumber('brightness', self.set_brightness, self.brightness_min, self.brightness_max, self.brightness_default)
+		
+		self.contrast_min = -100
+		self.contrast_max = 100
+		self.contrast_default = 0
+		self.contrast = AttributeNumber('contrast', self.set_contrast, self.contrast_min, self.contrast_max, self.contrast_default)
+		
+		self.exposure_compensation_min = -25
+		self.exposure_compensation_max = 25
+		self.exposure_compensation_default = 0
+		self.exposure_compensation = AttributeNumber('exposure compensation', self.set_exposure_compensation, self.exposure_compensation_min, self.exposure_compensation_max, self.exposure_compensation_default)
+		
+		self.exposure_mode_options = ['off', 'auto', 'night',  'nightpreview', 'backlight', 'spotlight', 
+									'sports', 'snow', 'beach', 'verylong', 'fixedfps', 'antishake', 'fireworks']
+		self.exposure_mode_default = self.exposure_mode_options[1]
+		self.exposure_mode = AttributeOptions('exposure_mode', self.set_exposure_mode, self.exposure_mode_options, self.exposure_mode_default)
+		
+		self.iso_options = [100, 200, 400, 800, 1600]
+		self.iso_default = self.iso_options[0]
+		self.iso =  AttributeOptions('iso', self.set_iso, self.iso_options, self.iso_default)
+		
+		self.meter_mode_options = ['average', 'spot', 'backlit', 'matrix']
+		self.meter_mode_default = self.meter_mode_options[0]
+		self.meter_mode = AttributeOptions('meter_mode', self.set_meter_mode, self.meter_mode_options, self.meter_mode_default)
+		
+		self.attributes = [self.brightness, self.contrast, self.iso, self.exposure_compensation, self.exposure_mode, self.meter_mode]
 	
 	def set_brightness(self, value):
-		if not 0 <= value <= 100:
-			print "brightness value must be within 0 ... 100. Default: 50"
-			return
+		if not self.brightness_min <= value <= self.brightness_max:
+			print "brightness value must be within {0:d} ... {1:d}. Default: {2:d}".format(self.brightness_min, self.brightness_max, self.brightness_default)
+			return False
 		self.cam.brightness = value
+		return True
 		
 	def set_contrast(self, value):
-		if not -100 <= value <= 100:
-			print "contrast value must be within -100 ... 100. Default: 0"
-			return
+		if not self.contrast_min <= value <= self.contrast_max:
+			print "contrast value must be within {0:d} ... {1:d}. Default: {2:d}".format(self.contrast_min, self.contrast_max, self.contrast_default)
+			return False
 		self.cam.contrast = value
+		return True
 	
 	def set_exposure_compensation(self, value):
 		"""
 		Sets the exposure compensation to given value. Higher values result in brighter images.
 		"""
-		if not -25 <= value <= 25:
-			print "exposure compensation must be within -25 ... 25. Default: 0"
-			return
+		if not self.exposure_compensation_min <= value <= self.exposure_compensation_max:
+			print "exposure compensation must be within {0:d} ... {1:d}. Default: {2:d}".format(self.exposure_compensation_min, self.exposure_compensation_max, self.exposure_compensation_default)
+			return False
 		self.cam.exposure_compensation = value
+		return True
 	
 	def set_exposure_mode(self, mode):
-		modes = ['off', 'auto', 'night',  'nightpreview', 'backlight', 'spotlight', 
-					'sports', 'snow', 'beach', 'verylong', 'fixedfps', 'antishake', 'fireworks']
-		if mode not in modes:
+		if mode not in self.exposure_mode_options:
 			print "Mode must be one of: " + str(modes) + "\nDefault: auto"
-			return
+			return False
 		self.cam.exposure_mode = mode
+		return True
 	
 	def set_iso(self, value):
-		values = [100, 200, 400, 800]
-		if value not in values:
+		if value not in self.iso_options:
 			print "value must be one of " + str(values) + " Default: 100"
+			return False
 		self.cam.iso = value
+		return True
 		
 	def set_meter_mode(self, mode):
 		"""
 		Sets the mode to determine the camera uses to determine exposure time. Default: average
 		"""
-		modes = ['average', 'spot', 'backlit', 'matrix']
-		if mode not in modes:
+		if mode not in self.meter_mode_options:
 			print "Mode must be one of: " + str(modes) + "\nDefault: average"
-			return
+			return False
 		self.cam.meter_mode = mode 
+		return True
