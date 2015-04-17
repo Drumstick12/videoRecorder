@@ -35,4 +35,24 @@ class RasPiCamControllerTab(QtGui.QWidget):
 				new_h_layout.addWidget(cbox)
 			
 			self.main_layout.addLayout(new_h_layout)
+		
+		# PREVIEW HELPER STUFF
+		preview_control_layout = QtGui.QHBoxLayout()
+		label = QtGui.QLabel("Preview Control", self)
+		preview_control_layout.addWidget(label)
+		
+		btn_bigger = QtGui.QPushButton('bigger')
+		preview_control_layout.addWidget(btn_bigger)
+		btn_bigger.setShortcut('Ctrl+b')
+		btn_bigger.setToolTip('Strg + b')
+		btn_bigger.clicked.connect(camera.increase_preview)
+		
+		btn_smaller = QtGui.QPushButton('smaller')
+		preview_control_layout.addWidget(btn_smaller)
+		btn_smaller.setShortcut('Ctrl+s')
+		btn_smaller.setToolTip('Strg + s')
+		btn_smaller.clicked.connect(camera.decrease_preview)
+		
+		self.main_layout.addLayout(preview_control_layout)
+		
 		return
