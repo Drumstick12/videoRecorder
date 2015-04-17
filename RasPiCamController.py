@@ -119,14 +119,14 @@ class RasPiCamController(object):
 		if not self.brightness_min <= value <= self.brightness_max:
 			print "brightness value must be within {0:d} ... {1:d}. Default: {2:d}".format(self.brightness_min, self.brightness_max, self.brightness_default)
 			return False
-		self.cam.brightness = value
+		self.cam.brightness = int(value)
 		return True
 		
 	def set_contrast(self, value):
 		if not self.contrast_min <= value <= self.contrast_max:
 			print "contrast value must be within {0:d} ... {1:d}. Default: {2:d}".format(self.contrast_min, self.contrast_max, self.contrast_default)
 			return False
-		self.cam.contrast = value
+		self.cam.contrast = int(value)
 		return True
 	
 	def set_exposure_compensation(self, value):
@@ -136,21 +136,21 @@ class RasPiCamController(object):
 		if not self.exposure_compensation_min <= value <= self.exposure_compensation_max:
 			print "exposure compensation must be within {0:d} ... {1:d}. Default: {2:d}".format(self.exposure_compensation_min, self.exposure_compensation_max, self.exposure_compensation_default)
 			return False
-		self.cam.exposure_compensation = value
+		self.cam.exposure_compensation = int(value)
 		return True
 	
 	def set_exposure_mode(self, mode):
 		if mode not in self.exposure_mode_options:
-			print "Mode must be one of: " + str(modes) + "\nDefault: auto"
+			print "Mode must be one of: " + str(self.exposure_mode_options) + "\nDefault: auto"
 			return False
-		self.cam.exposure_mode = mode
+		self.cam.exposure_mode = str(mode)
 		return True
 	
 	def set_iso(self, value):
-		if value not in self.iso_options:
-			print "value must be one of " + str(values) + " Default: 100"
+		if int(value) not in self.iso_options:
+			print "value must be one of " + str(self.iso_options) + " Default: 100"
 			return False
-		self.cam.iso = value
+		self.cam.iso = int(value)
 		return True
 		
 	def set_meter_mode(self, mode):
@@ -158,7 +158,7 @@ class RasPiCamController(object):
 		Sets the mode to determine the camera uses to determine exposure time. Default: average
 		"""
 		if mode not in self.meter_mode_options:
-			print "Mode must be one of: " + str(modes) + "\nDefault: average"
+			print "Mode must be one of: " + str(self.meter_mode_options) + "\nDefault: average"
 			return False
-		self.cam.meter_mode = mode 
+		self.cam.meter_mode = str(mode)
 		return True
