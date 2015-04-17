@@ -22,6 +22,7 @@ class AttributeNumber(Attribute):
 		super(AttributeNumber, self).__init__(name, handle)
 		self._min = min
 		self._max = max
+		self._default = default
 		self._current = default
 	
 	@property
@@ -39,6 +40,13 @@ class AttributeNumber(Attribute):
 		self._max = value
 	
 	@property
+	def default(self):
+		return self._default
+	@default.setter
+	def default(self, value):
+		self._default = value
+	
+	@property
 	def current(self):
 		return self._current
 	@current.setter
@@ -46,10 +54,11 @@ class AttributeNumber(Attribute):
 		self._current = value
 
 class AttributeOptions(Attribute):
-	def __init__(self, name, handle, options, default):
+	def __init__(self, name, handle, options, default_index):
 		super(AttributeOptions,self).__init__(name, handle)
 		self._options = options
-		self._current = default
+		self._default_index = default_index
+		self._current = options[default_index]
 	
 	@property
 	def options(self):
@@ -57,6 +66,13 @@ class AttributeOptions(Attribute):
 	@options.setter
 	def options(self, option_list):
 		self._options = option_list
+	
+	@property
+	def default_index(self):
+		return self._default_index
+	@default_index.setter
+	def default_index(self, value):
+		self._default_index = value
 		
 	@property
 	def current(self):
@@ -86,15 +102,15 @@ class RasPiCamController(object):
 		
 		self.exposure_mode_options = ['off', 'auto', 'night',  'nightpreview', 'backlight', 'spotlight', 
 									'sports', 'snow', 'beach', 'verylong', 'fixedfps', 'antishake', 'fireworks']
-		self.exposure_mode_default = self.exposure_mode_options[1]
+		self.exposure_mode_default = 1
 		self.exposure_mode = AttributeOptions('exposure mode', self.set_exposure_mode, self.exposure_mode_options, self.exposure_mode_default)
 		
 		self.iso_options = [100, 200, 400, 800, 1600]
-		self.iso_default = self.iso_options[0]
+		self.iso_default = 0
 		self.iso =  AttributeOptions('iso', self.set_iso, self.iso_options, self.iso_default)
 		
 		self.meter_mode_options = ['average', 'spot', 'backlit', 'matrix']
-		self.meter_mode_default = self.meter_mode_options[0]
+		self.meter_mode_default = 0
 		self.meter_mode = AttributeOptions('meter mode', self.set_meter_mode, self.meter_mode_options, self.meter_mode_default)
 		
 		self.attributes = [self.brightness, self.contrast, self.iso, self.exposure_compensation, self.exposure_mode, self.meter_mode]
