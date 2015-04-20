@@ -367,7 +367,7 @@ class Main(QtGui.QMainWindow):
     def populate_controller_tabs(self):
 	if len(self.cameras) > 0:
 		for cam_name, cam in self.cameras.items():
-			if cam.is_raspicam:
+			if cam.is_raspicam():
 				new_controller_tab = RasPiCamControllerTab(cam)
 				self.controller.addTab(new_controller_tab, cam_name + " - Controller")
 
