@@ -370,6 +370,9 @@ class Main(QtGui.QMainWindow):
 			if cam.is_raspicam():
 				new_controller_tab = RasPiCamControllerTab(cam)
 				self.controller.addTab(new_controller_tab, cam_name + " - Controller")
+	
+	if not next((cam for cam in self.cameras if self.cameras[cam].is_raspicam), None):
+		self.top_layout.removeWidget(self.controller)
 
     def populate_video_tabs(self):
         tmp = []
