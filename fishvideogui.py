@@ -4,18 +4,19 @@ import cv2
 import sys
 import os
 import glob
-from optparse import OptionParser
+
 from nitime.index_utils import tri
+from optparse import OptionParser
 from VideoRecording import VideoRecording
-from default_config import default_template, camera_device_search_range, camera_name_format, frames_per_second, \
+from default_config import default_template, camera_device_search_range, camera_name_format, frames_per_second,\
     width, height, max_tab_width, min_tab_width, offset_left, offset_top
 
 sys.path.append('../')
 from datetime import date, datetime, timedelta
 from MetadataEntry import MetadataEntry
+from RasPiCamControllerTab import RasPiCamControllerTab
 from VideoCanvas import VideoCanvas
 from MetadataTab import MetadataTab
-from RasPiCamControllerTab import RasPiCamControllerTab
 import numpy as np
 from PIL import Image as image
 from PIL import ImageQt as iqt
@@ -55,6 +56,8 @@ try:
 except Exception, details:
     print 'Unfortunately, your system misses the PyQt4 packages.'
     quit()
+
+# #######################################
 
 # import os
 try:
@@ -112,6 +115,9 @@ class Main(QtGui.QMainWindow):
         self.programmed_stop = False
         self.programmed_stop_datetime = None
         self.starttime = None
+
+        # TODO will see if needed
+        # self.is_recording = False
 
         if options:
             # template selection
@@ -171,7 +177,6 @@ class Main(QtGui.QMainWindow):
             self.idle_screen = options.idle_screen
             if self.idle_screen:
                 print 'Video Display OFF'
-        print
 
         # #######################################
         # LAYOUTS
@@ -190,23 +195,24 @@ class Main(QtGui.QMainWindow):
         self.main_layout.addLayout(self.bottom_info_layout)
 
         # #######################################
-        #  TOP LAYOUT
+
+        # POPULATE TOP LAYOUT
         self.videos = QtGui.QTabWidget()
         self.videos.setMinimumWidth(min_tab_width)
         self.videos.setMaximumWidth(max_tab_width)
         self.video_recordings = None
         self.video_tabs = {}
-	
-	self.controller = QtGui.QTabWidget()
-	self.controller.setMinimumWidth(min_tab_width)
-	self.controller.setMaximumWidth(max_tab_width)
+
+        self.controller = QtGui.QTabWidget()
+        self.controller.setMinimumWidth(min_tab_width)
+        self.controller.setMaximumWidth(max_tab_width)
 
         self.metadata = QtGui.QTabWidget()
         self.metadata.setMinimumWidth(min_tab_width)
         self.metadata.setMaximumWidth(max_tab_width)
 
         self.top_layout.addWidget(self.videos)
-	self.top_layout.addWidget(self.controller)
+        self.top_layout.addWidget(self.controller)
         self.top_layout.addWidget(self.metadata)
 
         # #######################################
@@ -214,7 +220,7 @@ class Main(QtGui.QMainWindow):
         default_template_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'templates', default_xml_template)
         self.populate_metadata_tab(default_template_path)
         self.populate_video_tabs()
-	self.populate_controller_tabs()
+        self.populate_controller_tabs()
 
         # #######################################
         # POPULATE BOTTOM LAYOUT
@@ -298,10 +304,18 @@ class Main(QtGui.QMainWindow):
         if self.instant_start:
             self.clicked_record()
 
-        # a simple timer to create some noise on the canvas
-        self.timer = QtCore.QTimer()
-        self.connect(self.timer, QtCore.SIGNAL('timeout()'), self.update_video)
-        self.timer.start(1000./frames_per_second)
+
+        # # a simple timer to create some noise on the canvas
+        # self.timer = QtCore.QTimer()
+        # self.connect(self.timer, QtCore.SIGNAL('timeout()'), self.update_video)
+        # self.timer.start(1000./frames_per_second)
+
+        # start cameras
+        for cam_name, cam in self.cameras.items():
+            self.connect(self, QtCore.SIGNAL('start_capture'), cam.start_capture)
+            self.connect(self, QtCore.SIGNAL('stop_capture'), cam.stop_capture)
+            self.camera_threads[cam_name].start()
+        self.emit(QtCore.SIGNAL("start_capture"))
 
     def create_menu_bar(self):
         self.statusBar()
@@ -365,16 +379,16 @@ class Main(QtGui.QMainWindow):
             self.metadata_tabs[s.type] = MetadataTab(s,self.metadata)
 
     def populate_controller_tabs(self):
-	if len(self.cameras) > 0:
-		for cam_name, cam in self.cameras.items():
-			if cam.is_raspicam():
-				new_controller_tab = RasPiCamControllerTab(cam)
-				self.controller.addTab(new_controller_tab, cam_name + " - Controller")
-	
-	if len([cam for cam in self.cameras if self.cameras[cam].is_raspicam()]) == 0:
-		self.top_layout.removeWidget(self.controller)
-		self.controller.deleteLater()
-		self.controler = None
+        if len(self.cameras) > 0:
+            for cam_name, cam in self.cameras.items():
+                if cam.is_raspicam():
+                    new_controller_tab = RasPiCamControllerTab(cam)
+                    self.controller.addTab(new_controller_tab, cam_name + " - Controller")
+
+        if len([cam for cam in self.cameras if self.cameras[cam].is_raspicam()]) == 0:
+            self.top_layout.removeWidget(self.controller)
+            self.controller.deleteLater()
+            self.controler = None
 
     def populate_video_tabs(self):
         tmp = []
@@ -385,41 +399,70 @@ class Main(QtGui.QMainWindow):
             if raspicam.is_working():
                 tmp.extend([raspicam])
 
-        self.cameras = {camera_name_format % j: v for j, v in enumerate(tmp)}
+        # self.cameras = {camera_name_format % j: v for j, v in enumerate(tmp)}
 
+        self.cameras = dict()
+        for j, cam in enumerate(tmp):
+            cam.name = camera_name_format % j
+            cam.color = self.color
+            self.cameras[cam.name] = cam
+
+        # create tabs for cameras
         if len(self.cameras) > 0:
             for cam_name, cam in self.cameras.items():
                 self.video_tabs[cam_name] = VideoCanvas(parent=self)
                 self.videos.addTab(self.video_tabs[cam_name], cam_name)
                 self.video_tabs[cam_name].setLayout(QtGui.QHBoxLayout())
+
+            # create threads for cameras
+            self.camera_threads = dict()
+            for cam_name, cam in self.cameras.items():
+                self.camera_threads[cam_name] = QtCore.QThread(parent=self)
+                cam.moveToThread(self.camera_threads[cam_name])
+                self.connect(cam, QtCore.SIGNAL("NewFrame(PyQt_PyObject)"), self.update_canvas)
+                self.connect(self, QtCore.SIGNAL("start_recordings ( PyQt_PyObject ) "), cam.create_and_start_new_recording)
+                self.connect(self, QtCore.SIGNAL("stop_recordings"), cam.stop_recording)
+
         else:
             self.videos.addTab(QtGui.QWidget(), "No camera found")
 
     def create_and_start_new_videorecordings(self):
         # @jan: could choose potentially from PIM1, MJPG, MP42, DIV3, DIVX, U263, I263, FLV1
         # CV_FOURCC('P','I','M','1')    = MPEG-1 codec
+# <<<<<<< HEAD
+        # if self.trial_counter == 0:
+        #     self.check_data_dir()
+        # #trial_name = '%s/trial_%04i' % (self.data_dir, self.trial_counter)
+        # trial_name = '{0:s}/trial_{1:04d}'.format(self.data_dir, self.trial_counter)
+        # self.tags = list()
+        # self.video_recordings = {cam_name: (VideoRecording('{0}_{1}.avi'.format(trial_name, cam_name),
+        #                                                    '{0}_{1}_metadata.dat'.format(trial_name, cam_name),
+        #                                                    cam.get_resolution(),
+        #                                                    frames_per_second,
+        #                                                    'XVID',
+        #                                                    color=False)
+        #                                     if not cam.is_raspicam() else
+        #                                     RasPiVideoRecording('{0}_{1}.h264'.format(trial_name, cam_name),
+        #                                                         '{0}_{1}_metadata.dat'.format(trial_name, cam_name),
+        #                                                         "h264",
+        #                                                         self.cameras[cam_name]))
+        #                          for cam_name, cam in self.cameras.items()}
+        # print self.video_recordings
+# =======
+
         if self.trial_counter == 0:
             self.check_data_dir()
-        #trial_name = '%s/trial_%04i' % (self.data_dir, self.trial_counter)
+
         trial_name = '{0:s}/trial_{1:04d}'.format(self.data_dir, self.trial_counter)
         self.tags = list()
-        self.video_recordings = {cam_name: (VideoRecording('{0}_{1}.avi'.format(trial_name, cam_name),
-                                                           '{0}_{1}_metadata.dat'.format(trial_name, cam_name),
-                                                           cam.get_resolution(),
-                                                           frames_per_second,
-                                                           'XVID',
-                                                           color=False)
-                                            if not cam.is_raspicam() else
-                                            RasPiVideoRecording('{0}_{1}.h264'.format(trial_name, cam_name),
-                                                                '{0}_{1}_metadata.dat'.format(trial_name, cam_name),
-                                                                "h264",
-                                                                self.cameras[cam_name]))
-                                 for cam_name, cam in self.cameras.items()}
-        print self.video_recordings
+
+        # emit signal to create and start new video-recordings
+        self.emit(QtCore.SIGNAL("start_recordings ( PyQt_PyObject ) "), trial_name )
 
         # drop timestamp for start or recording
         trial_info_filename = '{0:s}/trial_{1:04d}_info.dat'.format(self.data_dir, self.trial_counter)
         self.starttime = datetime.now()
+
         timestamp = self.starttime.strftime("%Y-%m-%d  %H:%M:%S:%f")[:-3]
         with open(trial_info_filename, 'w') as f:
             f.write('start-time: '+timestamp+'\n')
@@ -427,6 +470,9 @@ class Main(QtGui.QMainWindow):
         # display start time
         time_label = 'start-time: {0:s}   ---  running: {1:s}'.format(timestamp, str(datetime.now()-self.starttime)[:-7])
         self.label_time.setText(time_label)
+
+        # TODO will see if needed
+        # self.is_recording = True
 
     def check_data_dir(self):
         today = date.today()
@@ -447,9 +493,16 @@ class Main(QtGui.QMainWindow):
             timestamp = datetime.now().strftime("stop-time: %Y-%m-%d  %H:%M:%S:%f")[:-3]
             f.write(timestamp+'\n')
 
-        for v in self.video_recordings.values():
-            v.stop()
-        self.video_recordings = None
+# <<<<<<< HEAD
+#         for v in self.video_recordings.values():
+#             v.stop()
+#         self.video_recordings = None
+# =======
+
+        # emit stop signal
+        self.emit(QtCore.SIGNAL("stop_recordings"))
+
+        self.is_recording = False
 
         self.label_time.setText('')
         self.starttime = None
@@ -494,7 +547,8 @@ class Main(QtGui.QMainWindow):
         self.button_stop.setDisabled(True)
         self.button_cancel.setDisabled(True)
         self.button_tag.setDisabled(True)
-        self.save_metadata()
+
+        # self.save_metadata()
         self.trial_counter += 1
 
     def clicked_tag(self):
@@ -536,13 +590,15 @@ class Main(QtGui.QMainWindow):
             m = t.metadata()
             if m.type == 'recording':
                 v = odml.Value(self.record_timestamp, dtype='datetime')
-                m.append(odml.Property('StartTime', v))
+                # m.append(odml.Property('StartTime', v))
+                m.append(odml.Property('StartTime', self.record_timestamp))
             doc.append(m)
 
         for cam_name, cam in self.cameras.items():
             s = odml.Section(cam_name,'hardware/camera')
             v = odml.Value(frames_per_second, unit="Hz")
-            s.append(odml.Property('Framerate', v))
+            # s.append(odml.Property('Framerate', v))
+            s.append(odml.Property('Framerate', frames_per_second, dtype='int', unit='Hz'))
             for p, v in cam.get_properties().items():
                 prop = odml.Property(p, v)
                 s.append(prop)
@@ -553,57 +609,61 @@ class Main(QtGui.QMainWindow):
         writer = XMLWriter(doc)
         writer.write_file('{0}/{1}.xml'.format(self.data_dir, trial_name))
 
-    def update_video(self):
+    # def update_video(self):
+    #     # check for programmed stop-time
+    #     if self.programmed_stop \
+    #             and self.programmed_stop_datetime < datetime.now():
+    #         self.stop_all_recordings()
+    #         self.app.exit()
+    #
+    #     is_recording = False
+    #     for cam_name, cam in self.cameras.items():
+    #         # grab a frame
+    #         frame, dtime = cam.grab_frame()
+    #
+    #         # post-processing
+    #         if self.color:
+    #             frame = brg2rgb(frame)
+    #         else:
+    #             frame = brg2grayscale(frame)
+    #
+    #         # save frame
+    #         if self.video_recordings is not None:
+    #             self.video_recordings[cam_name].write(frame)
+    #             self.video_recordings[cam_name].write_metadata(dtime)
+    #             is_recording = True
+    #
+    #         label = self.videos.tabText(self.videos.currentIndex())
+    #
+    #         # display frame
+    #         if label == cam_name and not self.idle_screen:
+    #             self.video_tabs[cam_name].setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(image.fromarray(frame))))
+    #
+    #     if is_recording:
+
+    def update_canvas(self, data):
         # check for programmed stop-time
         if self.programmed_stop \
-                and self.programmed_stop_datetime < datetime.now():
+           and self.programmed_stop_datetime < datetime.now():
             self.stop_all_recordings()
+            # wait for recordings to stop
+            self.wait(100)
             self.app.exit()
 
-        is_recording = False
-        for cam_name, cam in self.cameras.items():
-            # grab a frame
-            frame, dtime = cam.grab_frame()
+        cam_name = data[0]
+        frame = data[1]
 
-            # post-processing
-            if self.color:
-                frame = brg2rgb(frame)
-            else:
-                frame = brg2grayscale(frame)
+        # display frame
+        label = self.videos.tabText(self.videos.currentIndex())
+        if label == cam_name and not self.idle_screen:
+            self.video_tabs[cam_name].setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(image.fromarray(frame))))
 
-            # save frame
-            if self.video_recordings is not None:
-                self.video_recordings[cam_name].write(frame)
-                self.video_recordings[cam_name].write_metadata(dtime)
-                is_recording = True
-
-            label = self.videos.tabText(self.videos.currentIndex())
-
-            # display frame
-            if label == cam_name and not self.idle_screen:
-                self.video_tabs[cam_name].setImage(QtGui.QPixmap.fromImage(iqt.ImageQt(image.fromarray(frame))))
-
-        if is_recording:
+        if self.is_recording:
             # display start time
             timestamp = self.starttime.strftime("%Y-%m-%d  %H:%M:%S")
             time_label = 'start-time: {0:s}   ---  running: {1:s}'.format(timestamp, str(datetime.now()-self.starttime)[:-7])
             self.label_time.setText(time_label)
 
-            # self.write_times_file()
-
-    def write_times_file(self):
-        for rec in self.video_recordings:
-            timefile_name = '{0:s}/trial_{1:04d}_times.dat'.format(self.data_dir, self.trial_counter)
-            print timefile_name
-
-        with open(timefile_name, 'a') as timefile:
-            timefile.write(str(datetime.now() - self.starttime) + "\n")
-
-    # called by metadata-entries in tabs
-    # ADAPT to your needs
-    @property
-    def is_recording(self):
-        return self.video_recordings is not None
 
     # ACTIONS
     # Actions can be used to assign keyboard-shortcuts
@@ -622,7 +682,6 @@ class Main(QtGui.QMainWindow):
         self.connect(self.action_start_stop, QtCore.SIGNAL('triggered()'), self.start_stop)
         self.addAction(self.action_start_stop)
 
-
         # Create a Tag
         self.action_tag = QtGui.QAction('Tag Movie',self)
         self.action_tag.setShortcut(Qt.Qt.CTRL+Qt.Qt.Key_T)
@@ -640,7 +699,6 @@ class Main(QtGui.QMainWindow):
         self.connect(self.action_change_tab_right, QtCore.SIGNAL('triggered()'), self.prev_tab)
         self.addAction(self.action_change_tab_right)
 
-
     def next_tab(self):
         if self.tab.currentIndex() + 1 < self.tab.count():
             self.tab.setCurrentIndex(self.tab.currentIndex() + 1)
@@ -653,6 +711,14 @@ class Main(QtGui.QMainWindow):
         else:
             self.tab.setCurrentIndex(self.tab.count() - 1)
 
+
+    def closeEvent(self, event):
+        if self.is_recording:
+            self.stop_all_recordings()
+        self.emit(QtCore.SIGNAL("stop_capture"))
+        for cam_name, thread in self.camera_threads.items():
+            thread.quit()
+        self.app.exit()
 
 # #######################################
 # WORKER CLASSES

@@ -6,9 +6,8 @@ width, height = 1500, 600
 offset_left, offset_top = 100, 100
 max_tab_width, min_tab_width = 640, 480
 
-
 # camera configurations
 camera_device_search_range = range(0, 20)
 camera_name_format = 'camera%02i'
 
-frames_per_second = 30
+frames_per_second = 25
