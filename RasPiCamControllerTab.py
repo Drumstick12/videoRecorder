@@ -53,6 +53,30 @@ class RasPiCamControllerTab(QtGui.QWidget):
 		btn_smaller.setToolTip('Strg + s')
 		btn_smaller.clicked.connect(camera.decrease_preview)
 		
+		btn_right = QtGui.QPushButton('right')
+		preview_control_layout.addWidget(btn_right)
+		btn_right.setShortcut('Ctrl+right')
+		btn_right.setToolTip('Strg + right')
+		btn_right.clicked.connect(camera.move_preview_right)
+		
+		btn_left = QtGui.QPushButton('left')
+		preview_control_layout.addWidget(btn_left)
+		btn_left.setShortcut('Ctrl+left')
+		btn_left.setToolTip('Strg + left')
+		btn_left.clicked.connect(camera.move_preview_left)
+		
+		btn_up = QtGui.QPushButton('up')
+		preview_control_layout.addWidget(btn_up)
+		btn_up.setShortcut('Ctrl+up')
+		btn_up.setToolTip('Strg + up')
+		btn_up.clicked.connect(camera.move_preview_up)
+		
+		btn_down = QtGui.QPushButton('down')
+		preview_control_layout.addWidget(btn_down)
+		btn_down.setShortcut('Ctrl+down')
+		btn_down.setToolTip('Strg + down')
+		btn_down.clicked.connect(camera.move_preview_down)
+		
 		self.main_layout.addLayout(preview_control_layout)
 		
 		return

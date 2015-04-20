@@ -23,6 +23,8 @@ class RasPiCam(object):
 		# fitting: (490,275)
 		self.preview_width = 480
 		self.preview_height = 270
+		self.preview_pos_x = 100
+		self.preview_pos_y = 300
 		self.open()
 	
 	def open(self):
@@ -109,11 +111,27 @@ class RasPiCam(object):
 	def increase_preview(self):
 		self.preview_width += 16
 		self.preview_height += 9
-		self.camera.preview.window = (100, 300, self.preview_width, self.preview_height)
+		self.camera.preview.window = (self.preview_pos_x, self.preview_pos_y, self.preview_width, self.preview_height)
 	
 	def decrease_preview(self):
 		self.preview_width -= 16
 		self.preview_height -= 9
-		self.camera.preview.window = (100, 300, self.preview_width, self.preview_height)
+		self.camera.preview.window = (self.preview_pos_x, self.preview_pos_y, self.preview_width, self.preview_height)
 	
+	def move_preview_right(self):
+		self.preview_pos_x += 16
+		self.camera.preview.window = (self.preview_pos_x, self.preview_pos_y, self.preview_width, self.preview_height)
+	
+	def move_preview_left(self):
+		self.preview_pos_x -= 16
+		self.camera.preview.window = (self.preview_pos_x, self.preview_pos_y, self.preview_width, self.preview_height)
+	
+	def move_preview_up(self):
+		self.preview_pos_y -= 9
+		self.camera.preview.window = (self.preview_pos_x, self.preview_pos_y, self.preview_width, self.preview_height)
+	
+	def move_preview_down(self):
+		self.preview_pos_y += 9
+		self.camera.preview.window = (self.preview_pos_x, self.preview_pos_y, self.preview_width, self.preview_height)
+		
 	
