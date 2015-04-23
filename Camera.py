@@ -20,7 +20,7 @@ def brg2rgb(frame):
 def brg2grayscale(frame):
     return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-# <<<<<<< HEAD
+# <<<<<<< HEAD8
 # class Camera:
 #     def __init__(self, device_no=0, post_processor=None):
 # =======

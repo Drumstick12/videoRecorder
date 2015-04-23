@@ -1,8 +1,15 @@
+try:
+    from PyQt4 import QtGui, QtCore, Qt
+except Exception, details:
+    print 'Unfortunately, your system misses the PyQt4 packages.'
+    quit()
 import picamera
 import cPickle as pickle
 
-class RasPiVideoRecording(object):
+class RasPiVideoRecording(QtCore.QObject):
 	def __init__(self, filename, filename_metadata, codec, raspicam):
+		QtCore.QObject.__init__(self)
+		# super(RasPiVideoRecording, self).__init__(self) #??!!!
 		self.cam = raspicam
 		self.filename = filename
 		self.filename_metadata = filename_metadata

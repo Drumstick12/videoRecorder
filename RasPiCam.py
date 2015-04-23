@@ -1,4 +1,8 @@
-# TODO try except?
+try:
+    from PyQt4 import QtGui, QtCore, Qt
+except Exception, details:
+    print 'Unfortunately, your system misses the PyQt4 packages.'
+    quit()
 import picamera
 import picamera.array
 import io
@@ -9,8 +13,10 @@ import warnings
 from datetime import datetime
 from RasPiCamController import RasPiCamController
 
-class RasPiCam(object):
+class RasPiCam(QtCore.QObject):
 	def __init__(self):
+		QtCore.QObject.__init__(self)
+		# super(RasPiCam, self).__init__(self) # why not??!!
 		self.camera = None
 		self.cam_controller = None
 		self.cv2_stream = None 
