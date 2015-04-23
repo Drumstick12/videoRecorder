@@ -596,9 +596,9 @@ class Main(QtGui.QMainWindow):
 
         for cam_name, cam in self.cameras.items():
             s = odml.Section(cam_name,'hardware/camera')
-            v = odml.Value(frames_per_second, unit="Hz")
-            # s.append(odml.Property('Framerate', v))
-            s.append(odml.Property('Framerate', frames_per_second, dtype='int', unit='Hz'))
+	    if not cam.is_raspicam():
+		v = odml.Value(frames_per_second, unit="Hz")
+		s.append(odml.Property('Framerate', v))
             for p, v in cam.get_properties().items():
                 prop = odml.Property(p, v)
                 s.append(prop)
