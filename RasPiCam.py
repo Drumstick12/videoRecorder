@@ -88,7 +88,14 @@ class RasPiCam(object):
 	# TODO
 	def get_properties(self):
 		ret = {}
-		ret["rasp_framerate"] = self.camera._get_framerate()
+		ret["framerate"] = self.camera._get_framerate()
+		ret["brightness"] = self.camera.brightness
+		ret["contrast"] = self.camera.contrast
+		ret["exposure_compensation"] = self.camera.exposure_compensation
+		ret["exposure_mode"] = self.camera.exposure_mode
+		ret["iso"] = self.camera.iso
+		ret["meter_mode"] = self.camera.meter_mode
+		print ret
 		return ret
 	
 	def is_raspicam(self):
